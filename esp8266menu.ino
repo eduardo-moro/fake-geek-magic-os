@@ -2,7 +2,7 @@
 #include <SPI.h>
 
 #include "assets/menu/icons/wifi_icon.h"
-#include "assets/menu/wifi_qr_code.h"
+#include "assets/qr_codes/wifi_qr_code.h"
 #include "assets/menu/icons/bright_icon.h"
 #include "assets/menu/menu_bg.h"
 #include "assets/menu/secondary_menu_bg.h"

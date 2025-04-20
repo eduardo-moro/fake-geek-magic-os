@@ -1,6 +1,2 @@
-#ifndef WEB_H
-#define WEB_H
-
+#pragma once
 #include <Arduino.h>
-
-#endif

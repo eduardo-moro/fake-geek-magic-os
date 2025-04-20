@@ -2,7 +2,7 @@
 #include <wifi_icon.h>
 #include <bright_icon.h>
 #include <esp8266menu.ino>
-#include "animations.h"
+#include "animation.h"
 
 void loop_wifi_icon()
 {

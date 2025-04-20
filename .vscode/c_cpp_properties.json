@@ -3,9 +3,7 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**",
-                "C:\\Users\\eduar\\OneDrive\\Documentos\\Arduino",
-                "C:/Users/eduar/OneDrive/Documentos/Arduino/libraries/TFT_eSPI-2.5.43"
+                "${workspaceFolder}/**"
             ],
             "defines": [
                 "_DEBUG",

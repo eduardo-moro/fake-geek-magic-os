@@ -1,4 +1,12 @@
 #include "menu.h"
+#include <positions.h>
+#include <secondary_menu_bg.h>
+#include <menu_bg.h>
+#include <TFT_eSPI.h>
+
+extern bool wasTouched;
+extern int current_menu;
+extern TFT_eSPI tft;
 
 void drawMenuBackground()
 {

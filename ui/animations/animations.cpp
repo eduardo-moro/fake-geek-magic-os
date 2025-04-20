@@ -1,4 +1,8 @@
-#include animations.h
+#include <cstdint>
+#include <wifi_icon.h>
+#include <bright_icon.h>
+#include <esp8266menu.ino>
+#include "animations.h"
 
 void loop_wifi_icon()
 {

@@ -1,5 +1,6 @@
-
 #include "main.h"
+
+const int PWM_CHANNEL = 0;
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -19,13 +20,29 @@ unsigned long lastAnimTime = 0;
 int currentAnimFrame = 0;
 bool animate = true;
 
+unsigned long lastAnimTimeBat = 0;
+int currentAnimFrameBat = 0;
+
+// WiFi AP state
+boolean ap_active = false;
+boolean ap_connected = false;
+unsigned long ap_active_time = 0;
+
+char* current_route = "menu";
+
 void setup()
 {
   pinMode(BACKLIGHT_PIN, OUTPUT);
-  digitalWrite(BACKLIGHT_PIN, 100);
+
+  analogWriteRange(255);
+  analogWriteFreq(1000);
+
+  setBrightnessPercent(60);
 
   Serial.begin(115200);
   pinMode(TOUCH_PIN, INPUT);
+
+  Serial.println("Initializing TFT display...");
 
   tft.init();
   tft.setRotation(0);
@@ -33,25 +50,55 @@ void setup()
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextDatum(MC_DATUM);
 
+  // splash screen
+  if (!SPIFFS.begin()) {
+    Serial.println("SPIFFS mount failed!");
+  } else {
+    Serial.println("SPIFFS mount successful.");
+  }
+  TJpgDec.setJpgScale(1);
+  TJpgDec.setSwapBytes(true);
+  TJpgDec.setCallback(tft_output);
+
+  animate_splash_screen();
+
   drawMenuBackground();
   tft.setTextSize(1);
   tft.drawString("12:00", 40, 14);
-  drawMenuText("WIFI");
+  updateMenuLabels();
 }
 
 void loop()
 {
+
   touch_loop();
 
   if (animate)
   {
-    if (current_menu == 0)
+    loop_battery();
+    loop_icon();
+  }
+
+  if (ap_active)
+  {
+    ap_connected = WiFi.status() == WL_CONNECTED;
+    if (ap_connected)
     {
-      loop_wifi_icon();
+      stop_ap();
+      ap_active = false;
     }
-    else
+
+    if ((millis() - ap_active_time > 10000 || ap_connected) && current_route != "menu")
     {
-      loop_bright_icon();
+      // TODO: move logic to a initialize_menu function
+      current_route = "menu";
+      animate = true;
+      setBrightnessPercent(60);
+      drawMenuBackground();
+      tft.setTextSize(1);
+      tft.drawString("12:00", 40, 14);
+      tft.drawString("ap on", 120, 14);
+      updateMenuLabels();
     }
   }
 }

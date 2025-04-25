@@ -60,7 +60,11 @@ pio device list
 ```bash
 pio run --target upload
 ```
-7. Você pode monitorar a porta serial com o comando:
+7. Faça o upload das imagens do projeto:
+```bash
+pio run --target uploadfs
+```
+8. Você pode monitorar a porta serial com o comando:
 ```bash
 pio device monitor
 ```

@@ -86,9 +86,10 @@ pio device monitor
 |-----------|-----------|-----------|
   |<img src="images/cube_clock_menu.png" width="300">|<img src="images/cube_config_menu.png" width="300">|<img src="images/cube_wifi_menu.png" width="300">
 
-| **qr code** | **Menu Web** |
-|-----------|-----------|
-  |<img src="images/cube_qrcode.png" width="300">|<img src="images/wifi_config.png" width="300">
+| **qr code** | **Menu Web** | **Video demonstração** |
+|-----------|-----------|-----------|
+  |<img src="images/cube_qrcode.png" width="300">|<img src="images/wifi_config.png" width="300">|<video width="300" src="https://github.com/user-attachments/assets/e00cd91f-05d6-4324-9cac-71ca207750e2">)|
+
 
 <div align="right">
     <span>Feito com ❤️</span>

@@ -1,3 +1,7 @@
+<div align="center">
+    <img align="center" src="images/cube_clock.png" width="45%">
+</div>
+
 # Geek Magic Firmware
 
 Projeto pensado para a criação de um novo firmware customizado para uma cópia chinesa do geek magic que utiliza um esp8266 e um ch340c (conversor UART para USB) já integrado ao sistema, permitindo a gravação direta de firmware, sem nescessidade de um conversor externo.
@@ -65,18 +69,26 @@ pio device monitor
 1. Abra o dispositivo removendo os dois parafusos da parte de baixo e empurrando gentilmente a tela.
 2. Faça um jump entre os seguintes pinos:
 <div align="center">
-    <img align="center" src="images/open_cube_pin_4.jpg" width="45%">
+    <img align="center" src="images/open_cube_pin_4.png" width="45%">
 </div>
 4. Cole um botão na parte de trás (é nescessário remover 3 linhas da abertura, pode ser feito com um alicate.
 <div align="center">
-    <img src="images/open_cube_button.jpg" width="45%">
+    <img src="images/open_cube_button.png" width="45%">
 </div>
 5. Raspe uma pequena região do gnd da parte de cima da placa e ligue ao botão, o outro pino é soldado no pino que ligamos no passo 2.
 <div align="center">
-    <img src="images/open_cube_button.jpg" width="45%">
+    <img src="images/open_cube_button.png" width="45%">
 </div>
 
 ## 📷 Imagens do projeto:
+
+| **menu relógio** | **Menu Configurações** | **Menu WIFI** |
+|-----------|-----------|-----------|
+  |<img src="images/cube_clock_menu.png" width="300">|<img src="images/cube_config_menu.png" width="300">|<img src="images/cube_wifi_menu.png" width="300">
+
+| **qr code** | **Menu Web** |
+|-----------|-----------|
+  |<img src="images/cube_qrcode.png" width="300">|<img src="images/wifi_config.png" width="300">
 
 <div align="right">
     <span>Feito com ❤️</span>

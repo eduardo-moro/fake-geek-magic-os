@@ -73,7 +73,7 @@ pio device monitor
 </div>
 4. Cole um botão na parte de trás (é nescessário remover 3 linhas da abertura, pode ser feito com um alicate.
 <div align="center">
-    <img src="images/open_cube_button.png" width="45%">
+    <img src="images/cube_back.png" width="45%">
 </div>
 5. Raspe uma pequena região do gnd da parte de cima da placa e ligue ao botão, o outro pino é soldado no pino que ligamos no passo 2.
 <div align="center">

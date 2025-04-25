@@ -61,6 +61,21 @@ pio run --target upload
 pio device monitor
 ```
 
+## 🪛 Modificação do hardware:
+1. Abra o dispositivo removendo os dois parafusos da parte de baixo e empurrando gentilmente a tela.
+2. Faça um jump entre os seguintes pinos:
+<div align="center">
+    <img align="center" src="images/open_cube_pin_4.jpg" width="45%">
+</div>
+4. Cole um botão na parte de trás (é nescessário remover 3 linhas da abertura, pode ser feito com um alicate.
+<div align="center">
+    <img src="images/open_cube_button.jpg" width="45%">
+</div>
+5. Raspe uma pequena região do gnd da parte de cima da placa e ligue ao botão, o outro pino é soldado no pino que ligamos no passo 2.
+<div align="center">
+    <img src="images/open_cube_button.jpg" width="45%">
+</div>
+
 ## 📷 Imagens do projeto:
 
 <div align="right">

@@ -60,7 +60,11 @@ pio device list
 ```bash
 pio run --target upload
 ```
-7. Você pode monitorar a porta serial com o comando:
+7. Faça o upload das imagens do projeto:
+```bash
+pio run --target uploadfs
+```
+8. Você pode monitorar a porta serial com o comando:
 ```bash
 pio device monitor
 ```
@@ -69,16 +73,21 @@ pio device monitor
 1. Abra o dispositivo removendo os dois parafusos da parte de baixo e empurrando gentilmente a tela.
 2. Faça um jump entre os seguintes pinos:
 <div align="center">
-    <img align="center" src="images/open_cube_pin_4.png" width="45%">
+    <img align="center" src="images/open_cube_pin_4.png" width="200">
 </div>
-4. Cole um botão na parte de trás (é nescessário remover 3 linhas da abertura, pode ser feito com um alicate.
+3. Cole um botão na parte de trás (é nescessário remover 3 linhas da abertura, pode ser feito com um alicate.
 <div align="center">
-    <img src="images/open_cube_button.png" width="45%">
+    <img src="images/cube_back.png" width="200">
 </div>
-5. Raspe uma pequena região do gnd da parte de cima da placa e ligue ao botão, o outro pino é soldado no pino que ligamos no passo 2.
+4. Raspe uma pequena região do gnd da parte de cima da placa e ligue ao botão, o outro pino é soldado no pino que ligamos no passo 2.
 <div align="center">
-    <img src="images/open_cube_button.png" width="45%">
+    <img src="images/open_cube_button.png" width="200">
 </div>
+5. feche o cubo.
+<div align="center">
+    <img src="images/cube_back_isometric.png" width="200">
+</div>
+
 
 ## 📷 Imagens do projeto:
 
@@ -86,9 +95,10 @@ pio device monitor
 |-----------|-----------|-----------|
   |<img src="images/cube_clock_menu.png" width="300">|<img src="images/cube_config_menu.png" width="300">|<img src="images/cube_wifi_menu.png" width="300">
 
-| **qr code** | **Menu Web** |
-|-----------|-----------|
-  |<img src="images/cube_qrcode.png" width="300">|<img src="images/wifi_config.png" width="300">
+| **qr code** | **Menu Web** | **Video demonstração** |
+|-----------|-----------|-----------|
+  |<img src="images/cube_qrcode.png" width="300">|<img src="images/wifi_config.png" width="300">|<video width="300" src="https://github.com/user-attachments/assets/e00cd91f-05d6-4324-9cac-71ca207750e2">)|
+
 
 <div align="right">
     <span>Feito com ❤️</span>

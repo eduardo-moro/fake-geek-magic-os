@@ -46,14 +46,7 @@ const unsigned char battery_icon_5 [] = {
 
 
 // Array of all bitmaps for convenience. (Total bytes used to store images in = 384)
-static const unsigned char* battery_state_list[6] = {
-	battery_icon_0,
-	battery_icon_1,
-	battery_icon_2,
-	battery_icon_3,
-	battery_icon_4,
-	battery_icon_5
-};
+
 
 
 #endif

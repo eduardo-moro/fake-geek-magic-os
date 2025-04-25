@@ -7,8 +7,33 @@
 #include "ui/menu/menu.h"
 #include <TFT_eSPI.h>
 
+extern bool wasTouched;
+extern bool longPressDisplayed;
+extern bool waitingForSecondTap;
+extern bool potentialSingleClick;
+extern unsigned long lastTapTime;
+extern unsigned long touchStartTime;
+extern int current_menu;
+extern TFT_eSPI tft;
+extern String route;
+
 bool isTouched();
 long readCapacitiveSensor(int pin);
 void touch_loop();
+
+void detectMenuTouch();
+void handleMenuClick();
+void handleMenuPress();
+void handleMenuDoubleClick();
+void handleMenuRelease();
+void handleClockQuit();
+void doNothing();
+
+typedef struct MenuCommand {
+    void (*onClick)();
+    void (*onLongPress)();
+    void (*onDoubleClick)();
+    void (*onRelease)();
+};
 
 #endif // TOUCH_H

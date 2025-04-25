@@ -9,14 +9,16 @@
 #include "config/positions.h"
 #include "config/menu_items.h"
 #include "assets/ui/battery.h"
-#include <TJpg_Decoder.h>
+#include "ui/menu/menu.h"
 
+extern TFT_eSPI tft;
+extern unsigned long lastAnimTime;
+extern unsigned long lastAnimTimeBat;
+extern int currentAnimFrame;
+extern int current_menu;
 
 void loop_wifi_icon();
-void loop_bright_icon();
 void loop_icon();
 void loop_battery();
-void animate_splash_screen();
-bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t *bitmap);
 
 #endif // ANIMATION_H

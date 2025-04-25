@@ -4,7 +4,6 @@
 #include <Arduino.h>
 #include <pins.h>
 
-
 void setBrightnessPercent(int percent);
 
 #endif

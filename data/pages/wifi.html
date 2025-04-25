@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Moro's Mini TV - WiFi Setup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --background: #000000;
+            --text-primary: #dfdfdf;
+        }
+
+        body {
+            font-family: monospace;
+            font-weight: 100;
+            margin: 0;
+            padding: 20px;
+            background: var(--background);
+            color: var(--text-primary);
+            font-size: 18px;
+            line-height: 1.6;
+            height: 100%;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+        }
+
+        .network {
+            padding: 12px;
+            margin: 6px 0;
+            background: rgb(0, 0, 0);
+            border-radius: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .signal-ssid {
+            display: flex;
+            align-items: center;
+        }
+
+        .network:active {
+            transform: scale(0.98);
+        }
+
+        .network.selected {
+            background: var(--primary-color);
+        }
+
+        .signal {
+            margin-top: 8px;
+            margin-right: 1em;
+        }
+
+        .signal img {
+            width: 1.2em;
+            mix-blend-mode: lighten;
+        }
+
+        .center-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reload {
+            width: 1em;
+            height: 1em;
+            margin-right: 1em;
+            cursor: pointer;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .reload.spin {
+            animation: spin 1s linear infinite reverse;
+        }
+
+        form {
+            position: fixed;
+            bottom: 18px;
+            left: 16px;
+            right: 16px;
+            background: rgb(10, 10, 10);
+            padding: 20px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+            display: none;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            font-size: 18px;
+            border-radius: 16px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            color: white;
+            background-color: rgb(10, 10, 10);
+        }
+
+        input:focus,
+        input:active input:focus-visible {
+            border: none;
+            outline: none;
+            background-color: rgb(25, 25, 25);
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 18px;
+            font-size: 18px;
+            border-radius: 16px;
+            width: 100%;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+
+        button:active {
+            opacity: 0.8;
+        }
+
+        .message {
+            display: none;
+            text-align: center;
+            padding: 12px;
+            font-size: 16px;
+            color: #ffffff;
+            position: fixed;
+            top: 6px;
+            right: 6px;
+            left: 6px;
+            background-color: transparent;
+        }
+
+        #networks {
+            margin-bottom: 80px;
+            /* Space for the form */
+        }
+
+        #selectedWifiLabel {
+            width: 100%;
+            text-align: center;
+        }
+
+        #selectedWifiLabel h3 {
+            margin: 0;
+            margin-bottom: 1em;
+            font-weight: 100;
+        }
+
+        @media (min-width: 500px) {
+            body, form, .message {
+                max-width: 500px;
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+
+<img>
+<h1>WI-FI</h1>
+<div class="message" id="loading">Searching for networks...</div>
+<div class="message" id="failed" id="loading">Failed to load networks</div>
+
+<div class="center-between">
+    <p>Available networks</p>
+    <img id="loadNetworks" src="./images/reload.png" class="reload" />
+</div>
+
+<div id="networks"></div>
+<form id="connectForm" onsubmit="return connect(event)">
+    <input type="hidden" id="selectedSSID" name="ssid" required>
+    <div id="selectedWifiLabel"></div>
+    <input type="password" id="password" name="password" placeholder="Enter password" aria-label="WiFi password">
+    <button type="submit" id="connectButton">Connect</button>
+</form>
+
+<script>
+    //const baseUrl = "https://d30e0698-93a3-4859-ad0a-f27f399bb0fb.mock.pstmn.io/" //set for debug
+    const baseUrl = "" //set for flashing
+    const loading = document.getElementById('loading');
+    const failed = document.getElementById('failed');
+    const connectButton = document.getElementById('connectButton');
+    const loadButton = document.getElementById('loadNetworks');
+    const connectForm = document.getElementById('connectForm');
+    const password = document.getElementById('password');
+
+    function getSignalLevel(rssi) {
+        if (rssi >= -55) return 3;
+        if (rssi >= -70) return 2;
+        if (rssi >= -85) return 1;
+        return 0;
+    }
+
+    function loadNetworks() {
+        connectForm.style.display = 'none';
+        loading.style.display = 'block';
+        loadButton.classList.add('spin');
+        fetch(baseUrl + '/scan')
+            .then(response => response.json())
+            .then(data => {
+                data.networks.sort((a, b) => b.rssi - a.rssi);
+
+                let html = '';
+
+                data.networks.forEach(network => {
+                    html += `
+                            <div class="network" onclick="selectNetwork('${network.ssid}', ${network.secure})">
+                                <div class="signal-ssid">
+                                    <div class="signal">
+                                        <img src="./images/wifi_${getSignalLevel(network.rssi)}.png" alt="Signal Strength">
+                                    </div>
+                                    <div>${network.ssid}</div>
+                                </div> 
+                                <div>${network.secure ? '🔒' : ''}</div>
+                            </div>`;
+                });
+                document.getElementById('networks').innerHTML = html;
+                loading.style.display = 'none';
+            })
+            .catch(() => {
+                setTimeout(() => {
+                    loading.style.display = 'none';
+                }, 800)
+
+                failed.style.display = 'block';
+                setTimeout(() => {
+                    failed.style.display = 'none';
+                }, 800);
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    loadButton.classList.remove('spin');
+                }, 800);
+            });
+    }
+
+    function selectNetwork(ssid, secure) {
+        const selectedWifiLabel = document.getElementById('selectedWifiLabel');
+        selectedWifiLabel.innerHTML = `<h3>${ssid}</h3>`
+        connectForm.style.display = 'block';
+        password.value = '';
+        password.focus();
+
+        document.getElementById('connectForm').reset();
+
+        document.getElementById('selectedSSID').value = ssid;
+        const passwordField = document.getElementById('password');
+
+        passwordField.placeholder = secure ? 'Enter password' : 'Open network';
+        passwordField.required = secure;
+        passwordField.style.display = secure ? 'block' : 'none';
+
+        document.querySelectorAll('.network').forEach(el =>
+            el.classList.remove('selected'));
+        event.target.closest('.network').classList.add('selected');
+
+        connectButton.textContent = secure ? 'Connect' : 'Join Network';
+    }
+
+    async function connect(e) {
+        e.preventDefault();
+        connectButton.disabled = true;
+        connectButton.textContent = 'Connecting...';
+
+        try {
+            const formData = new FormData(document.getElementById('connectForm'));
+            const response = await fetch(baseUrl + '/connect', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                alert('Connection successful! Device will restart');
+                setTimeout(() => {
+                    window.location.href = 'http://' + location.hostname;
+                }, 2000);
+            } else {
+                throw new Error(await response.text());
+            }
+        } catch (error) {
+            alert(`Connection failed: ${error.message}`);
+        } finally {
+            connectButton.disabled = false;
+            connectButton.textContent = 'Connect';
+        }
+    }
+
+    // Load networks on button click
+    loadButton.addEventListener('click', loadNetworks);
+
+    // Initial load
+    loadNetworks();
+
+    // Mobile-friendly touch events
+    document.addEventListener('touchstart', function () { }, true);
+</script>
+</body>
+
+</html>

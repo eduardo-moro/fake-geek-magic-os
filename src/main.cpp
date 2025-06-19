@@ -27,7 +27,11 @@ boolean ap_connected = false;
 unsigned long ap_active_time = 0;
 
 // Web server
+#if defined(ESP8266)
 ESP8266WebServer server(80);
+#elif defined(ESP32)
+WebServer server(80);
+#endif
 DNSServer dnsServer;
 
 // Routing

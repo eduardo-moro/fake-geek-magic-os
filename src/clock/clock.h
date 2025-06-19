@@ -1,8 +1,8 @@
 #ifndef CLOCK_H
 #define CLOCK_H
 
-#include <time.h>
-#include <TFT_eSPI.h>
+#include "time.h"
+#include "TFT_eSPI.h"
 
 // Brasília Timezone (UTC-3, no DST)
 #define TZ_OFFSET -3 * 3600 // in seconds

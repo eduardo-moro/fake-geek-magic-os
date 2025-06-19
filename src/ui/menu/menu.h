@@ -1,22 +1,22 @@
 #ifndef MENU_H
 #define MENU_H
 
-#include <Arduino.h>
-#include <TFT_eSPI.h>
+#include "Arduino.h"
+#include "TFT_eSPI.h"
 #include "config/positions.h"
 #include "assets/menu/secondary_menu_bg.h"
 #include "assets/menu/menu_bg.h"
 #include "config/menu_items.h"
-#include <display/display.h>
+#include "display/display.h"
 
-#include <menu/icons/wifi_icon.h>
-#include <menu/icons/bright_icon.h>
-#include <menu/icons/clock_icon.h>
-#include <menu/icons/settings_icon.h>
-#include <qr_codes/wifi_qr_code.h>
-#include "ui/animation/animation.h"
-#include <main.h>
-#include <web.h>
+#include "../assets/menu/icons/wifi_icon.h"
+#include "../assets/menu/icons/bright_icon.h"
+#include "../assets/menu/icons/clock_icon.h"
+#include "../assets/menu/icons/settings_icon.h"
+#include "../assets/qr_codes/wifi_qr_code.h"
+#include "../ui/animation/animation.h"
+#include "../web/web.h"
+#include "main.h"
 
 #define CLOCK_MENU_INDEX 0
 #define WIFI_MENU_INDEX 1

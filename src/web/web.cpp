@@ -1,5 +1,11 @@
 #include "web.h"
 
+#if defined(ESP8266)
+int enc = ENC_TYPE_NONE;
+#elif defined(ESP32)
+int enc = WIFI_AUTH_OPEN;
+#endif
+
 void start_ap()
 {
     ap_active_time = millis();
@@ -141,6 +147,7 @@ void host_webpage()
     // WiFi scan endpoint
     server.on("/scan", HTTP_GET, []()
               {
+
         String json = "{";
         json += "\"networks\":[";
         int n = WiFi.scanNetworks();
@@ -149,7 +156,7 @@ void host_webpage()
             json += "{";
             json += "\"ssid\":\"" + WiFi.SSID(i) + "\",";
             json += "\"rssi\":" + String(WiFi.RSSI(i)) + ",";
-            json += "\"secure\":" + String(WiFi.encryptionType(i) != ENC_TYPE_NONE);
+            json += "\"secure\":" + String(WiFi.encryptionType(i) != enc);
             json += "}";
         }
         json += "]}";

@@ -25,6 +25,7 @@
 #elif defined(ESP32)
 
 #define ST7735_DRIVER
+#define TFT_RGB_ORDER TFT_BGR
 
 // Display size
 #define TFT_WIDTH 128
@@ -41,14 +42,13 @@
 #define TFT_MOSI 4
 #define TFT_SCLK 3
 
-#define ST7735_GREENTAB
+#define ST7735_GREENTAB3
 
 #define TFT_INVERSION_ON
 
 #define SPI_FREQUENCY 40000000      // 40 MHz
 #define SPI_READ_FREQUENCY 20000000 // 20 MHz
 #define SPI_TOUCH_FREQUENCY 2500000 // 2.5 MHz
-#define SPI_TOUCH_MODE 0            // Mode 0 for touch controller
 
 #endif // ESP32
 

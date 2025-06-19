@@ -63,6 +63,7 @@ void detectMenuTouch()
     if (!wasTouched && buttonState == BTN_PRESSED)
     {
         wasTouched = true;
+        digitalWrite(11, HIGH);
     }
 
     if (wasTouched && buttonState == BTN_RELEASED)
@@ -74,6 +75,7 @@ void detectMenuTouch()
             commandHandler[current_route].onRelease();
             registerUserActivity();
             Serial.println("released");
+            digitalWrite(11, LOW);
         }
         else
         {

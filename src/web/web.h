@@ -1,21 +1,21 @@
 #ifndef WEB_H
 #define WEB_H
 
-#include <LittleFS.h>
-#include <Arduino.h>
-#include <TFT_eSPI.h>
-#include <DNSServer.h>
-#include <animation.h>
-#include <EEPROM.h>
+#include "LittleFS.h"
+#include "Arduino.h"
+#include "TFT_eSPI.h"
+#include "DNSServer.h"
+#include "../ui/animation/animation.h"
+#include "EEPROM.h"
 
 // Platform-specific includes
 #if defined(ESP8266)
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include "ESP8266WiFi.h"
+#include "ESP8266WebServer.h"
 #define WebServerType ESP8266WebServer
 #elif defined(ESP32)
-#include <WiFi.h>
-#include <WebServer.h>
+#include "WiFi.h"
+#include "WebServer.h"
 #define WebServerType WebServer
 #endif
 

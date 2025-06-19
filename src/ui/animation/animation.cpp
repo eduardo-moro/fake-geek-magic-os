@@ -1,6 +1,5 @@
 #include "animation.h"
 
-
 void loop_icon()
 {
     if (millis() - lastAnimTime >= icon_pos.anim_delay)
@@ -26,8 +25,8 @@ void loop_battery()
     if (millis() - lastAnimTimeBat >= 500)
     {
         int level = getSignalStrengthLevel();
-        
-        static const unsigned char* battery_state_list[4] = {
+
+        static const unsigned char *battery_state_list[4] = {
             battery_icon_0,
             battery_icon_1,
             battery_icon_2,
@@ -38,11 +37,9 @@ void loop_battery()
             TFT_RED,
             TFT_ORANGE,
             TFT_CYAN,
-            TFT_GREEN
-        };
-        
+            TFT_GREEN};
+
         lastAnimTimeBat = millis();
         tft.drawXBitmap(200, 4, battery_state_list[level], 20, 12, color_list[level], TFT_BLACK);
     }
 }
-

@@ -16,6 +16,7 @@ extern unsigned long touchStartTime;
 extern int current_menu;
 extern TFT_eSPI tft;
 extern String route;
+extern unsigned long lastUserActivity;
 
 bool isTouched();
 long readCapacitiveSensor(int pin);
@@ -28,8 +29,10 @@ void handleMenuDoubleClick();
 void handleMenuRelease();
 void handleClockQuit();
 void doNothing();
+void registerUserActivity();
 
-typedef struct MenuCommand {
+typedef struct MenuCommand
+{
     void (*onClick)();
     void (*onLongPress)();
     void (*onDoubleClick)();

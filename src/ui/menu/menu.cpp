@@ -1,10 +1,10 @@
 #include "menu.h"
 
 MenuItem menu_items[] = {
+    {"RELOGIO", nextMenu, handleClockClick, prevMenu, {clock_0_bits, clock_1_bits, clock_2_bits, clock_3_bits}, 2, NULL},
     {"WIFI", nextMenu, handleWifiClick, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
     {"BRILHO", nextMenu, doNothing, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
-    {"CONFIGURACOES", nextMenu, doNothing, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 1, NULL},
-    {"RELOGIO", nextMenu, handleClockClick, prevMenu, {clock_0_bits, clock_1_bits, clock_2_bits, clock_3_bits}, 2, NULL},
+    {"TIMEBOX", nextMenu, doNothing, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL},
 };
 
 void drawMenuBackground()
@@ -55,7 +55,6 @@ void handleWifiClick()
 
 void handleClockClick()
 {
-    Serial.println("starting click");
     route = "clock";
     setBrightnessPercent(5);
     delay(500);
@@ -80,4 +79,9 @@ void initializeMenu()
     drawMenuBackground();
     drawTime();
     updateMenuLabels();
+}
+
+void handleTimeboxClick()
+{
+    timebox = initial_timebox * 60;
 }

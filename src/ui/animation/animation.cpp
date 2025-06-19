@@ -27,13 +27,11 @@ void loop_battery()
     {
         int level = getSignalStrengthLevel();
         
-        static const unsigned char* battery_state_list[6] = {
+        static const unsigned char* battery_state_list[4] = {
             battery_icon_0,
             battery_icon_1,
             battery_icon_2,
             battery_icon_3,
-            battery_icon_4,
-            battery_icon_5
         };
 
         static const unsigned int color_list[4] = {
@@ -44,7 +42,7 @@ void loop_battery()
         };
         
         lastAnimTimeBat = millis();
-        tft.drawXBitmap(200, 9, battery_state_list[level], 20, 12, color_list[level], TFT_BLACK);
+        tft.drawXBitmap(200, 4, battery_state_list[level], 20, 12, color_list[level], TFT_BLACK);
     }
 }
 

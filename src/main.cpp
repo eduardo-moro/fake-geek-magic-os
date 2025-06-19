@@ -1,6 +1,5 @@
 #include "main.h"
 
-
 const int PWM_CHANNEL = 0;
 
 TFT_eSPI tft = TFT_eSPI();
@@ -34,10 +33,15 @@ DNSServer dnsServer;
 // Routing
 String route = "menu";
 
+// Timebox
+int initial_timebox = 20;
+int timebox = initial_timebox * 60;
+static time_t last_timebox_update = 0;
+
 void setup()
 {
-  pinMode(TOUCH_PIN, INPUT_PULLUP);
-  pinMode(BACKLIGHT_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(TFT_BL, OUTPUT);
 
   analogWriteRange(255);
   analogWriteFreq(1000);
@@ -85,6 +89,14 @@ void loop()
 {
   touch_loop();
   server.handleClient();
+
+  if (route == "menu" && (millis() - lastUserActivity > 20000))
+  {
+    route = "clock";
+    setBrightnessPercent(5);
+    delay(500);
+    start_clock();
+  }
 
   if (route == "menu")
   {

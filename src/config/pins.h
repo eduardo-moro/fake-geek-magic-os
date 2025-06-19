@@ -1,9 +1,16 @@
 #ifndef PINS_H
 #define PINS_H
 
-#define BACKLIGHT_PIN 5
-#define TOUCH_PIN 4
-#define TOUCH_THRESHOLD 300
-#define TOUCH_CS -1
+#if defined(ESP8266)
+
+#define BUTTON_PIN 4
+#define TFT_BL 5
+
+#elif defined(ESP32)
+
+#define BUTTON_PIN 8
+#define TFT_BL -1
 
 #endif
+
+#endif // PINS_H

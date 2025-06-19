@@ -8,7 +8,6 @@ void start_ap()
 
     WiFi.mode(WIFI_AP);
 
-    // as fixed as the qrcode.
     while (!WiFi.softAP("moro's mini tv", "morinho0"))
     {
         Serial.print(".");
@@ -21,10 +20,7 @@ void start_ap()
     Serial.println("\nAP started");
     host_webpage();
 
-    // Close ap and go back to menu.
-    // Added call for reference.
     qr_code_timeout();
-    return;
 }
 
 void stop_ap()

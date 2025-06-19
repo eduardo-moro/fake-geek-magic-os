@@ -4,11 +4,20 @@
 #include <LittleFS.h>
 #include <Arduino.h>
 #include <TFT_eSPI.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
 #include <DNSServer.h>
 #include <animation.h>
 #include <EEPROM.h>
+
+// Platform-specific includes
+#if defined(ESP8266)
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#define WebServerType ESP8266WebServer
+#elif defined(ESP32)
+#include <WiFi.h>
+#include <WebServer.h>
+#define WebServerType WebServer
+#endif
 
 #define FS_NO_GLOBALS
 #define MAX_NETWORKS 5
@@ -27,7 +36,7 @@ extern unsigned long ap_active_time;
 extern TFT_eSPI tft;
 extern DNSServer dnsServer;
 extern String route;
-extern ESP8266WebServer server;
+extern WebServerType server;
 
 void start_ap();
 void stop_ap();
@@ -37,6 +46,5 @@ void saveNetwork(const String &ssid, const String &password);
 bool connectToBestNetwork();
 void qr_code_timeout();
 int getSignalStrengthLevel();
-
 
 #endif

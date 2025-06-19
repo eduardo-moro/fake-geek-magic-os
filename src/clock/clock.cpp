@@ -24,7 +24,7 @@ void top_clock_loop()
         struct tm timeinfo;
         localtime_r(&now, &timeinfo);
         drawTime();
-        Serial.printf("Time: %02d:%02d:%02d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        Serial.printf("Time: %02d:%02d\n", timeinfo.tm_hour, timeinfo.tm_min);
         lastPrint = now;
     }
 }
@@ -35,12 +35,36 @@ void drawTimeFullScreen()
     struct tm timeinfo;
     localtime_r(&now, &timeinfo);
 
-    char timeStr[9]; // "HH:MM:SS"
-    snprintf(timeStr, sizeof(timeStr), "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
-
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setTextSize(4);
+
+    char timeStr[6]; // "HH:MM:SS"
+    snprintf(timeStr, sizeof(timeStr), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+
+    tft.setTextSize(7);
     tft.drawString(timeStr, 120, 120);
+
+    int secw = map(timeinfo.tm_sec, 0, 60, 0, 240);
+
+    tft.setTextSize(2);
+
+    tft.drawLine(0, 238, secw, 238, TFT_CYAN);
+    tft.drawLine(secw, 238, 240, 238, TFT_BLACK);
+
+    // timebox countdown
+    if (timebox > 0)
+    {
+        time_t current = time(nullptr);
+        if (current != last_timebox_update && timebox > 0)
+        {
+            timebox--;
+            last_timebox_update = current;
+        }
+
+        secw = map(timebox, 0, initial_timebox * 60, 0, 240);
+
+        tft.drawLine(0, 2, secw, 2, TFT_CYAN);
+        tft.drawLine(secw, 2, 240, 2, TFT_BLACK);
+    }
 }
 
 void start_clock()
@@ -49,11 +73,13 @@ void start_clock()
     drawTimeFullScreen();
 }
 
-void clock_loop() {
+void clock_loop()
+{
     static time_t lastPrint = 0;
     time_t now = time(nullptr);
 
-    if (now != lastPrint) {
+    if (now != lastPrint)
+    {
         struct tm timeinfo;
         localtime_r(&now, &timeinfo);
         drawTimeFullScreen();

@@ -3,8 +3,8 @@
 MenuItem menu_items[] = {
     {"RELOGIO", nextMenu, handleClockClick, prevMenu, {clock_0_bits, clock_1_bits, clock_2_bits, clock_3_bits}, 2, NULL},
     {"WIFI", nextMenu, handleWifiClick, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
-    {"BRILHO", nextMenu, doNothing, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
-    {"TIMEBOX", nextMenu, doNothing, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL},
+    {"BRILHO", nextMenu, handleBrightClick, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
+    {"TIMEBOX", nextMenu, handleTimeboxClick, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL},
 };
 
 void drawMenuBackground()
@@ -83,5 +83,48 @@ void initializeMenu()
 
 void handleTimeboxClick()
 {
+    initial_timebox = (initial_timebox + 5) % 60;
     timebox = initial_timebox * 60;
+
+    static char timebox_label[10];
+    snprintf(timebox_label, sizeof(timebox_label), "%d min", initial_timebox);
+    menu_items[TIMEBOX_MENU_INDEX].label = timebox_label;
+
+    tft.setTextSize(menu_items[current_menu].size);
+    tft.fillRect(main_item_boundaries.x, main_item_boundaries.y, main_item_boundaries.w, main_item_boundaries.h, TFT_BLACK);
+    tft.drawString(menu_items[current_menu].label, main_item_pos.x, main_item_pos.y);
+
+    delay(500);
+
+    menu_items[TIMEBOX_MENU_INDEX].label = "TIMEBOX";
+    tft.setTextSize(menu_items[current_menu].size);
+    tft.fillRect(main_item_boundaries.x, main_item_boundaries.y, main_item_boundaries.w, main_item_boundaries.h, TFT_BLACK);
+    tft.drawString(menu_items[current_menu].label, main_item_pos.x, main_item_pos.y);
+
+    tft.setTextSize(2);
+}
+
+void handleBrightClick()
+{
+    static int brightness_level = 0;
+    brightness_level = min(1, (brightness_level + 1) % 4);
+
+    setBrightnessPercent(brightness_level * 20);
+
+    static char label[10];
+    snprintf(label, sizeof(label), "%d%%", brightness_level * 20);
+    menu_items[BRIGHT_MENU_INDEX].label = label;
+
+    tft.setTextSize(menu_items[current_menu].size);
+    tft.fillRect(main_item_boundaries.x, main_item_boundaries.y, main_item_boundaries.w, main_item_boundaries.h, TFT_BLACK);
+    tft.drawString(menu_items[current_menu].label, main_item_pos.x, main_item_pos.y);
+
+    delay(500);
+
+    menu_items[BRIGHT_MENU_INDEX].label = "BRILHO";
+    tft.setTextSize(menu_items[current_menu].size);
+    tft.fillRect(main_item_boundaries.x, main_item_boundaries.y, main_item_boundaries.w, main_item_boundaries.h, TFT_BLACK);
+    tft.drawString(menu_items[current_menu].label, main_item_pos.x, main_item_pos.y);
+
+    delay(500);
 }

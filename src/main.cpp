@@ -34,9 +34,9 @@ DNSServer dnsServer;
 String route = "menu";
 
 // Timebox
-int initial_timebox = 20;
-int timebox = initial_timebox * 60;
-static time_t last_timebox_update = 0;
+int initial_timebox = 10;
+int timebox = 0;
+time_t last_timebox_update = 0;
 
 void setup()
 {
@@ -90,7 +90,7 @@ void loop()
   touch_loop();
   server.handleClient();
 
-  if (route == "menu" && (millis() - lastUserActivity > 20000))
+  if (route == "menu" && (millis() - lastUserActivity > 15000))
   {
     route = "clock";
     setBrightnessPercent(5);

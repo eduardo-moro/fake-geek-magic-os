@@ -16,6 +16,6 @@ void drawTime();
 extern TFT_eSPI tft;
 extern int timebox;
 extern int initial_timebox;
-extern int last_timebox_update;
+extern time_t last_timebox_update;
 
 #endif

@@ -40,5 +40,7 @@ void handleClockClick();
 void doNothing();
 void updateMenuLabels();
 void initializeMenu();
+void handleTimeboxClick();
+void handleBrightClick();
 
 #endif // MENU_H

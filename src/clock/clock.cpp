@@ -47,8 +47,8 @@ void drawTimeFullScreen()
 
     tft.setTextSize(2);
 
-    tft.drawLine(0, 238, secw, 238, TFT_CYAN);
-    tft.drawLine(secw, 238, 240, 238, TFT_BLACK);
+    tft.fillRect(0, 238, secw, 240, TFT_CYAN);
+    tft.fillRect(secw, 238, 240 - secw, 2, TFT_BLACK);
 
     // timebox countdown
     if (timebox > 0)
@@ -57,13 +57,29 @@ void drawTimeFullScreen()
         if (current != last_timebox_update && timebox > 0)
         {
             timebox--;
+            if (timebox <= 0)
+            {
+                initial_timebox = 10;
+            }
             last_timebox_update = current;
         }
 
         secw = map(timebox, 0, initial_timebox * 60, 0, 240);
 
-        tft.drawLine(0, 2, secw, 2, TFT_CYAN);
-        tft.drawLine(secw, 2, 240, 2, TFT_BLACK);
+        int color = TFT_CYAN;
+
+        if (timebox < 2 * 60)
+        {
+            color = TFT_RED;
+        }
+        else if (timebox < 5 * 60)
+        {
+            color = TFT_YELLOW;
+        }
+
+        int h = 233;
+        tft.fillRect(0, h, secw, 3, color);
+        tft.fillRect(secw, h, 240 - secw, 3, TFT_BLACK);
     }
 }
 

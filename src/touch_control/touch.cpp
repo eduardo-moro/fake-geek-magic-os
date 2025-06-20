@@ -1,6 +1,5 @@
 #include "touch.h"
 
-static unsigned long lastTouchCheck = 0;
 int current_route = 0;
 const int DEBOUNCE_DELAY = 50;
 
@@ -36,7 +35,6 @@ void touch_loop()
 void detectMenuTouch()
 {
     int reading = digitalRead(BUTTON_PIN);
-    Serial.println(reading);
 
     // Added debounce logic
     if (reading == LOW)

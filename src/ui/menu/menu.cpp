@@ -3,9 +3,21 @@
 MenuItem menu_items[] = {
     {"RELOGIO", nextMenu, handleClockClick, prevMenu, {clock_0_bits, clock_1_bits, clock_2_bits, clock_3_bits}, 2, NULL},
     {"WIFI", nextMenu, handleWifiClick, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
+    {"REDES", nextMenu, handleSelectWifi, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
     {"BRILHO", nextMenu, handleBrightClick, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
     {"TIMEBOX", nextMenu, handleTimeboxClick, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL},
 };
+#define MENU_COUNT 5
+
+MenuItem original_menu_items[sizeof(menu_items) / sizeof(menu_items[0])];
+
+void copy_menu_items()
+{
+    for (size_t i = 0; i < MENU_COUNT; ++i)
+    {
+        original_menu_items[i] = menu_items[i];
+    }
+}
 
 void drawMenuBackground()
 {
@@ -51,6 +63,87 @@ void handleWifiClick()
     tft.drawXBitmap(0, 0, wifi_qr_code, 240, 240, TFT_BLACK, TFT_WHITE);
     setBrightnessPercent(5);
     start_ap();
+}
+
+void handleSelectWifi()
+{
+    copy_menu_items();
+
+    route = "wifi_select";
+    std::vector<WifiItem> wifi_items = getAvailableNetworksMenuItems();
+    int wifi_items_count = wifi_items.size();
+
+    const unsigned char *signal_bitmaps[] = {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits};
+
+    static MenuItem wifi_menu_items[5];
+    int count = wifi_items_count > (MENU_COUNT - 1) ? (MENU_COUNT - 1) : wifi_items_count;
+
+    wifi_menu_items[0].label = "VOLTAR";
+    wifi_menu_items[0].onClick = nextMenu;
+    wifi_menu_items[0].onLongPress = returnToMenu;
+    wifi_menu_items[0].onDoubleClick = prevMenu;
+    for (int j = 0; j < 4; ++j)
+        wifi_menu_items[0].iconFrames[j] = signal_bitmaps[0];
+    wifi_menu_items[0].size = 2;
+    wifi_menu_items[0].subMenu = NULL;
+
+    for (int i = 0; i < count; ++i)
+    {
+        int signal_strength = wifi_items[i].signal_strength;
+        wifi_menu_items[i + 1].label = strdup(wifi_items[i].ssid.c_str());
+        wifi_menu_items[i + 1].onClick = nextMenu;
+        wifi_menu_items[i + 1].onLongPress = handleWifiSelected;
+        wifi_menu_items[i + 1].onDoubleClick = prevMenu;
+        for (int j = 0; j < 4; ++j)
+            wifi_menu_items[i + 1].iconFrames[j] = signal_bitmaps[signal_strength];
+        wifi_menu_items[i + 1].size = 2;
+        wifi_menu_items[i + 1].subMenu = NULL;
+    }
+
+    if (count < MENU_COUNT)
+    {
+        Serial.print("menu count: ");
+        Serial.println(count);
+
+        for (int i = count; i < MENU_COUNT; ++i)
+        {
+            int signal_strength = wifi_items[i].signal_strength;
+            wifi_menu_items[i].label = "";
+            wifi_menu_items[i].onClick = nextMenu;
+            wifi_menu_items[i].onLongPress = doNothing;
+            wifi_menu_items[i].onDoubleClick = prevMenu;
+            for (int j = 0; j < 4; ++j)
+                wifi_menu_items[i + 1].iconFrames[j] = signal_bitmaps[signal_strength];
+            wifi_menu_items[i].size = 2;
+            wifi_menu_items[i].subMenu = NULL;
+        }
+    }
+
+    for (int i = 0; i < MENU_COUNT; ++i)
+    {
+        menu_items[i] = wifi_menu_items[i];
+    }
+    set_open_menu(0);
+}
+
+void returnToMenu()
+{
+    route = "menu";
+    for (int i = 0; i < MENU_COUNT; ++i)
+    {
+        menu_items[i] = original_menu_items[i];
+    }
+    set_open_menu(WIFI_SELECT_INDEX);
+}
+
+void handleWifiSelected()
+{
+    for (int i = 0; i < MENU_COUNT; ++i)
+    {
+        menu_items[i] = original_menu_items[i];
+    }
+
+    connectToNetwork(menu_items[current_menu].label);
 }
 
 void handleClockClick()

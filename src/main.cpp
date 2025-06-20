@@ -6,6 +6,7 @@ TFT_eSPI tft = TFT_eSPI();
 
 // State definitions
 int current_menu = 0;
+int valid_menu_items = 0;
 
 // Control definitions
 bool wasTouched = false;

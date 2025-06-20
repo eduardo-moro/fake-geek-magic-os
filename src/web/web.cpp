@@ -318,3 +318,100 @@ int getSignalStrengthLevel()
         return 0; // Very weak
     }
 }
+
+int convertSignalStrengthLevel(long rssi)
+{
+    if (rssi >= -60)
+    {
+        return 3; // Strong
+    }
+    else if (rssi >= -70)
+    {
+        return 2; // Moderate
+    }
+    else if (rssi >= -80)
+    {
+        return 1; // Weak
+    }
+    else
+    {
+        return 0; // Very weak
+    }
+}
+
+std::vector<WifiItem> getAvailableNetworksMenuItems()
+{
+    std::vector<WifiItem> items;
+    EEPROM.begin(EEPROM_SIZE);
+    NetworkConfig networks[MAX_NETWORKS];
+    EEPROM.get(0, networks);
+    EEPROM.end();
+
+    int n = WiFi.scanNetworks();
+
+    for (int i = 0; i < n; i++)
+    {
+        String ssid = WiFi.SSID(i);
+        long rssi = WiFi.RSSI(i);
+        int signal_strength = convertSignalStrengthLevel(rssi);
+
+        for (int j = 0; j < MAX_NETWORKS; j++)
+        {
+            if (String(networks[j].ssid) == ssid)
+            {
+                items.push_back({ssid, ssid, signal_strength});
+                break;
+            }
+        }
+    }
+
+    std::sort(items.begin(), items.end(), [](const WifiItem &a, const WifiItem &b)
+              { return a.signal_strength > b.signal_strength; });
+
+    return items;
+}
+
+int getAvailableNetworksCount()
+{
+    int count = 0;
+    EEPROM.begin(EEPROM_SIZE);
+    NetworkConfig networks[MAX_NETWORKS];
+    EEPROM.get(0, networks);
+    EEPROM.end();
+
+    int n = WiFi.scanNetworks();
+
+    for (int i = 0; i < n; i++)
+    {
+        String ssid = WiFi.SSID(i);
+        for (int j = 0; j < MAX_NETWORKS; j++)
+        {
+            if (String(networks[j].ssid) == ssid)
+            {
+                count++;
+                break;
+            }
+        }
+    }
+    return count;
+}
+
+// connect to known network by ssid
+void connectToNetwork(const String &ssid)
+{
+    EEPROM.begin(EEPROM_SIZE);
+    NetworkConfig networks[MAX_NETWORKS];
+    EEPROM.get(0, networks);
+    EEPROM.end();
+
+    for (int i = 0; i < MAX_NETWORKS; i++)
+    {
+        if (String(networks[i].ssid) == ssid)
+        {
+            start_client(networks[i].ssid, networks[i].password);
+            return;
+        }
+    }
+
+    Serial.println("Network not found: " + ssid);
+}

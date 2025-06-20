@@ -30,6 +30,13 @@ struct NetworkConfig
     int last_connected; // Timestamp placeholder
 };
 
+struct WifiItem
+{
+    String ssid;
+    String value;
+    int signal_strength;
+};
+
 extern boolean ap_active;
 extern boolean ap_connected;
 extern unsigned long ap_active_time;
@@ -46,5 +53,8 @@ void saveNetwork(const String &ssid, const String &password);
 bool connectToBestNetwork();
 void qr_code_timeout();
 int getSignalStrengthLevel();
+int getAvailableNetworksCount();
+void connectToNetwork(const String &ssid);
+std::vector<WifiItem> getAvailableNetworksMenuItems();
 
 #endif

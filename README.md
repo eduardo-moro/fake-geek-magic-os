@@ -18,7 +18,7 @@ Projeto pensado para a criação de um novo firmware customizado para uma cópia
 ## ✨ Funcionalidades: 
 
 - **Relógio**: O firmware utiliza um servidor NTP público para sincronizar o horário atual;
-  **Pomodoro**: Contador pomodoro simples (25, 5, 45, 15);
+- **Pomodoro**: Contador pomodoro simples (25, 5, 45, 15);
 - **Qr code para configuração do wifi**: Na primeira configuração, ou após uma tentativa falha de se auto conectar com redes conhecidas, o sistema utiliza um qr code para permitir ao usuário a conexão com o ponto de acesso, também é utilizado um módulo de dns para directionar o usuário para o portal de configuração automaticamente, facilitando o pareamento;
 - **Dashboard de gerênciamento de preferências**: O sistema mantém um servidor local rodando na rede interna, permitindo acesso ao usuário, para configuração de preferências via web;
 **Menu**: A aplicação possui um menu, possibilitando multiplos usos e configuração sem utilização do portal web;

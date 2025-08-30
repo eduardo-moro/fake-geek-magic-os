@@ -1,3 +1,4 @@
 .pio
 build/
+bin/
 .vscode/

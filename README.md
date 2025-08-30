@@ -6,6 +6,15 @@
 
 Projeto pensado para a criação de um novo firmware customizado para uma cópia chinesa do geek magic que utiliza um esp8266 e um ch340c (conversor UART para USB) já integrado ao sistema, permitindo a gravação direta de firmware, sem nescessidade de um conversor externo.
 
+## 📚 Sumário
+  - [✨ Funcionalidades](#-funcionalidades)
+  - [🛠 Tecnologias Utilizadas](#-tecnologias-utilizadas)
+  - [⚙️ Instalação local](#️-instalação-local)
+    - [Pré-requisitos](#pré-requisitos)
+    - [Passo a passo](#-passo-a-passo)
+  - [🪛 Modificação do hardware](#-modificação-do-hardware)
+  - [📷 Imagens do projeto](#-imagens-do-projeto)
+
 ## ✨ Funcionalidades: 
 
 - **Relógio**: O firmware utiliza um servidor NTP público para sincronizar o horário atual;
@@ -25,14 +34,19 @@ Projeto pensado para a criação de um novo firmware customizado para uma cópia
 Certifique-se de ter os seguintes itens instalados em sua máquina para buildar o programa:
 
 - Visual Studio Code
+- Python3
 - PlatformIO IDE (extensão para VSCode)
+- Platformio CLI
 - Drivers CH340/CH341 (para comunicação USB)
 - Git (Windows | Linux/macOS)
 - Python 3.10+ (para scripts auxiliares)
 - Navegador moderno (Chrome, Firefox, Edge)
-> Tutorial pensado com comandos para bash, zsh, fish ou posh, adaptações podem ser nescessárias dependendo do sistema operacional.
+    > Tutorial pensado com comandos para bash, zsh, fish ou posh, adaptações podem ser nescessárias dependendo do sistema operacional.
 
-1. Instale a extensão PlatformIO IDE no VSCode
+### Passo a passo
+
+1. Instale a extensão PlatformIO IDE no VSCode e o [CLI](https://docs.platformio.org/en/latest/core/installation/methods/installer-script.html)
+    > (siga as instruções do [site oficial](https://docs.platformio.org/en/latest/core/installation/shell-commands.html) para mais detalhes sobre a criação do comando `pio` no seu sistema operacional.)
 
 2. Instale os drivers do CH340C
 
@@ -40,34 +54,36 @@ Certifique-se de ter os seguintes itens instalados em sua máquina para buildar 
     > Extraia e execute o instalador conforme seu sistema operacional
 
 3. Clone o projeto: 
-```bash
-git@github.com:eduardo-moro/fake-geek-magic-os.git
-cd fake-geek-magic-os
-```
+    ```bash
+    git clone git@github.com:eduardo-moro/fake-geek-magic-os.git
+    cd fake-geek-magic-os
+    ```
 
 4. Configuração do Projeto no PlatformIO:
     1. Abra a pasta do projeto no VSCode
     2. Aguarde a instalação automática das dependências (libs do PlatformIO)
-    3. Verifique a porta no arquivo platformio.ini:
-    4. copie o arquivo `src/config/User_Setup.h` para `.pio/libdeps/TFT_eSPI/User_Setup.h` (subscreva)
+    3. Abra o projeto pela interface do platformio.
+    4. Copie o arquivo `src/config/User_Setup.h` para `.pio/libdeps/TFT_eSPI/User_Setup.h` (subscreva)
+    5. Apague o arquivo `.pio/libdeps/TFT_eSPI/kconfig`
 
 5. Conecte o dispositivo via usb, confira a porta utilizada:
-```bash
-pio device list
-```
+    ```bash
+    pio device list
+    ```
+    > Atualize o arquivo `platformio.ini` com a porta do seu dispositivo.
 
 6. Compile o projeto e faça o upload:
-```bash
-pio run --target upload
-```
+    ```bash
+    pio run --target upload
+    ```
 7. Faça o upload das imagens do projeto:
-```bash
-pio run --target uploadfs
-```
+    ```bash
+    pio run --target uploadfs
+    ```
 8. Você pode monitorar a porta serial com o comando:
-```bash
-pio device monitor
-```
+    ```bash
+    pio device monitor
+    ```
 
 ## 🪛 Modificação do hardware:
 1. Abra o dispositivo removendo os dois parafusos da parte de baixo e empurrando gentilmente a tela.

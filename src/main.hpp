@@ -1,5 +1,4 @@
-#ifndef MAIN_H
-#define MAIN_H
+#pragma once
 
 #include "Arduino.h"
 
@@ -10,5 +9,4 @@
 #include "SPI.h"
 #include "TFT_eSPI.h"
 #include "clock/clock.hpp"
-
-#endif
+#include "pomodoro/pomodoro.hpp"

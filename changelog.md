@@ -32,6 +32,15 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ### Quebrado
   - Listagem de redes wifi conhecidas
 
+## [1.0.1] - 2025-08-30
+### Corrigido
+  - Headers .h atualizados para .hpp (consistência)
+
+## [1.0.1] - 2025-08-30
+### Adicionado
+  - Contador pomodoro simples (25, 5, 45, 15) com relógio no topo.
+
+
 ---
 
 

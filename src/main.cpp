@@ -43,6 +43,20 @@ int initial_timebox = 10;
 int timebox = 0;
 time_t last_timebox_update = 0;
 
+// Pomodoro
+int pomodoro_times[] = {
+  25 * 60, 5 * 60, 45 * 60, 15 * 60 // work, rest, long work, long rest.
+};
+int current_pomodoro = WORK;
+int pomodoro_c = pomodoro_times[current_pomodoro];
+time_t last_pomodoro_update = 0;
+uint16_t pomodoroStatusColors[] = {
+    TFT_ORANGE,
+    TFT_CYAN, 
+    TFT_RED,
+    TFT_GREEN
+};
+
 void setup()
 {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -112,6 +126,10 @@ void loop()
   else if (route == "clock")
   {
     clock_loop();
+  }
+  else if (route == "pomodoro")
+  {
+    pomodoro_loop();
   }
 
   if (ap_active)

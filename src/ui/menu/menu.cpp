@@ -6,6 +6,7 @@ MenuItem menu_items[] = {
     {"REDES", nextMenu, handleSelectWifi, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
     {"BRILHO", nextMenu, handleBrightClick, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
     {"TIMEBOX", nextMenu, handleTimeboxClick, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL},
+    {"POMODORO", nextMenu, handlePomodoroClick, prevMenu, {pomodoro_0_bits, pomodoro_1_bits, pomodoro_2_bits, pomodoro_3_bits}, 2, NULL}
 };
 #define MENU_COUNT 5
 
@@ -195,6 +196,14 @@ void handleTimeboxClick()
     tft.drawString(menu_items[current_menu].label, main_item_pos.x, main_item_pos.y);
 
     tft.setTextSize(2);
+}
+
+void handlePomodoroClick() 
+{
+    route = "pomodoro";
+    setBrightnessPercent(5);
+    delay(500);
+    start_pomodoro();
 }
 
 void handleBrightClick()

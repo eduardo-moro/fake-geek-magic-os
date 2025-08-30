@@ -8,8 +8,10 @@
 #include "assets/menu/menu_bg.hpp"
 #include "config/menu_items.hpp"
 #include "display/display.hpp"
+#include "pomodoro/pomodoro.hpp"
 
 #include "../assets/menu/icons/wifi_icon.hpp"
+#include "../assets/menu/icons/pomodoro_icon.hpp"
 #include "../assets/menu/icons/bright_icon.hpp"
 #include "../assets/menu/icons/clock_icon.hpp"
 #include "../assets/menu/icons/settings_icon.hpp"
@@ -38,6 +40,7 @@ void nextMenu();
 void prevMenu();
 void handleWifiClick();
 void handleClockClick();
+void handlePomodoroClick();
 void doNothing();
 void updateMenuLabels();
 void initializeMenu();

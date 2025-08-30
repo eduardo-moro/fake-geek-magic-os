@@ -18,6 +18,7 @@ Projeto pensado para a criação de um novo firmware customizado para uma cópia
 ## ✨ Funcionalidades: 
 
 - **Relógio**: O firmware utiliza um servidor NTP público para sincronizar o horário atual;
+  **Pomodoro**: Contador pomodoro simples (25, 5, 45, 15);
 - **Qr code para configuração do wifi**: Na primeira configuração, ou após uma tentativa falha de se auto conectar com redes conhecidas, o sistema utiliza um qr code para permitir ao usuário a conexão com o ponto de acesso, também é utilizado um módulo de dns para directionar o usuário para o portal de configuração automaticamente, facilitando o pareamento;
 - **Dashboard de gerênciamento de preferências**: O sistema mantém um servidor local rodando na rede interna, permitindo acesso ao usuário, para configuração de preferências via web;
 **Menu**: A aplicação possui um menu, possibilitando multiplos usos e configuração sem utilização do portal web;
@@ -107,13 +108,14 @@ Certifique-se de ter os seguintes itens instalados em sua máquina para buildar 
 
 ## 📷 Imagens do projeto:
 
+| | | |
+|-----------|-----------|-----------|
 | **menu relógio** | **Menu Configurações** | **Menu WIFI** |
-|-----------|-----------|-----------|
-  |<img src="images/cube_clock_menu.png" width="300">|<img src="images/cube_config_menu.png" width="300">|<img src="images/cube_wifi_menu.png" width="300">
-
+|<img src="images/cube_clock_menu.png" width="300">|<img src="images/cube_config_menu.png" width="300">|<img src="images/cube_wifi_menu.png" width="300">
 | **qr code** | **Menu Web** | **Video demonstração** |
-|-----------|-----------|-----------|
-  |<img src="images/cube_qrcode.png" width="300">|<img src="images/wifi_config.png" width="300">|<video width="300" src="https://github.com/user-attachments/assets/e00cd91f-05d6-4324-9cac-71ca207750e2">)|
+|<img src="images/cube_qrcode.png" width="300">|<img src="images/wifi_config.png" width="300">|<video width="300" src="https://github.com/user-attachments/assets/e00cd91f-05d6-4324-9cac-71ca207750e2">|
+| **Pomodoro** |   |   |
+|<video width="300" src="https://github.com/user-attachments/assets/b082004f-fcfe-4c71-8334-11bbbf080b00"> | |
 
 
 <div align="right">

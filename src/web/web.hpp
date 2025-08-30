@@ -2,10 +2,10 @@
 #define WEB_H
 
 #include "LittleFS.h"
-#include "Arduino.h"
+#include "arduino.h"
 #include "TFT_eSPI.h"
 #include "DNSServer.h"
-#include "../ui/animation/animation.h"
+#include "../ui/animation/animation.hpp"
 #include "EEPROM.h"
 
 // Platform-specific includes
@@ -14,8 +14,8 @@
 #include "ESP8266WebServer.h"
 #define WebServerType ESP8266WebServer
 #elif defined(ESP32)
-#include "WiFi.h"
-#include "WebServer.h"
+#include "WiFi.hpp"
+#include "WebServer.hpp"
 #define WebServerType WebServer
 #endif
 

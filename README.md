@@ -11,7 +11,7 @@ Projeto pensado para a criação de um novo firmware customizado para uma cópia
   - [🛠 Tecnologias Utilizadas](#-tecnologias-utilizadas)
   - [⚙️ Instalação local](#️-instalação-local)
     - [Pré-requisitos](#pré-requisitos)
-    - [Passo a passo](#-passo-a-passo)
+    - [Passo a passo](#passo-a-passo)
   - [🪛 Modificação do hardware](#-modificação-do-hardware)
   - [📷 Imagens do projeto](#-imagens-do-projeto)
 

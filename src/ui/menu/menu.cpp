@@ -1,4 +1,4 @@
-#include "menu.h"
+#include "menu.hpp"
 
 MenuItem menu_items[] = {
     {"RELOGIO", nextMenu, handleClockClick, prevMenu, {clock_0_bits, clock_1_bits, clock_2_bits, clock_3_bits}, 2, NULL},

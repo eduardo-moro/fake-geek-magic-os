@@ -1,4 +1,4 @@
-#include "animation.h"
+#include "animation.hpp"
 
 void loop_icon()
 {

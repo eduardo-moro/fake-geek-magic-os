@@ -1,4 +1,4 @@
-#include "clock.h"
+#include "clock.hpp"
 
 void drawTime()
 {

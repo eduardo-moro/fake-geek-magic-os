@@ -1,10 +1,10 @@
 #ifndef TOUCH_H
 #define TOUCH_H
 
-#include "Arduino.h"
-#include "config/pins.h"
-#include "assets/qr_codes/wifi_qr_code.h"
-#include "ui/menu/menu.h"
+#include "arduino.h"
+#include "config/pins.hpp"
+#include "assets/qr_codes/wifi_qr_code.hpp"
+#include "ui/menu/menu.hpp"
 #include "TFT_eSPI.h"
 
 extern bool wasTouched;

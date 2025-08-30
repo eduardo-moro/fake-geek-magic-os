@@ -1,4 +1,4 @@
-#include "main.h"
+#include "main.hpp"
 
 const int PWM_CHANNEL = 0;
 

@@ -45,12 +45,20 @@ time_t last_timebox_update = 0;
 
 // Pomodoro
 int pomodoro_times[] = {
-  25 * 60, 5 * 60, 45 * 60, 15 * 60 // work, rest, long work, long rest.
+  25 * 60, 5 * 60, // work, rest
+  25 * 60, 5 * 60, // work, rest
+  25 * 60, 5 * 60, // work, rest
+  45 * 60, 15 * 60 // long work, long rest
 };
-int current_pomodoro = WORK;
+
+int current_pomodoro = 0;
 int pomodoro_c = pomodoro_times[current_pomodoro];
 time_t last_pomodoro_update = 0;
 uint16_t pomodoroStatusColors[] = {
+    TFT_ORANGE,
+    TFT_CYAN, 
+    TFT_ORANGE,
+    TFT_CYAN, 
     TFT_ORANGE,
     TFT_CYAN, 
     TFT_RED,

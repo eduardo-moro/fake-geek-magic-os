@@ -3,11 +3,6 @@
 #include "time.h"
 #include "TFT_eSPI.h"
 
-#define WORK 0
-#define REST 1
-#define LONG_WORK 2
-#define LONG_REST 3
-
 void start_pomodoro();
 void pomodoro_loop();
 void drawPomodoroFullScreen();

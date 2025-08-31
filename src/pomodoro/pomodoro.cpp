@@ -53,8 +53,9 @@ void drawPomodoroFullScreen()
         {
             pomodoro_c--;
             if (pomodoro_c <= 0) {
+                size_t length = 8;
                 current_pomodoro++;
-                current_pomodoro = current_pomodoro % 4;
+                current_pomodoro = current_pomodoro % length;
                 pomodoro_c = pomodoro_times[current_pomodoro];
             }
             last_pomodoro_update = current;

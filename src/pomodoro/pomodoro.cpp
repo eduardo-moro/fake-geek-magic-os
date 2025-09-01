@@ -11,7 +11,7 @@ void drawPomodoroTime()
 
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.setTextSize(2);
-    tft.drawString(timeStr, 40, 14);
+    tft.drawString(timeStr, 120, 62);
 }
 
 void top_pomodoro_clock_loop()
@@ -29,6 +29,14 @@ void top_pomodoro_clock_loop()
     }
 }
 
+String colorToString(int angle, uint16_t color565) {
+    uint8_t r = ((color565 >> 11) & 0x1F) * 255 / 31;
+    uint8_t g = ((color565 >> 5) & 0x3F) * 255 / 63;
+    uint8_t b = (color565 & 0x1F) * 255 / 31;
+
+    return String(angle) + String(r) + "," + String(g) + "," + String(b);
+}
+
 void drawPomodoroFullScreen()
 {
     time_t now = time(nullptr);
@@ -41,10 +49,13 @@ void drawPomodoroFullScreen()
     char timeStr[6]; // "HH:MM:SS"
     snprintf(timeStr, sizeof(timeStr), "%02d:%02d", minutes, seconds);
 
-    tft.setTextSize(7);
-    tft.setTextColor(pomodoroStatusColors[current_pomodoro], TFT_BLACK);
+    int angle = map(pomodoro_times[current_pomodoro] - pomodoro_c, 0, pomodoro_times[current_pomodoro], 0, 360);
+    client.publish(MQTT_TOPIC_COMMAND, colorToString(angle, pomodoroStatusColors[current_pomodoro]).c_str());
+    
+    tft.setTextSize(5);
+    tft.drawArc(120, 120, 100, 96, 0, angle, pomodoroStatusColors[current_pomodoro], TFT_BLACK, true);
     tft.drawString(timeStr, 120, 120);
-    tft.setTextColor(TFT_WHITE);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
 
     if (pomodoro_c > 0)
     {

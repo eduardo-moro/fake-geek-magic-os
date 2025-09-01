@@ -1,7 +1,9 @@
 #pragma once
 
+#include "main.hpp"
 #include "time.h"
 #include "TFT_eSPI.h"
+#include "PubSubClient.h"
 
 void start_pomodoro();
 void pomodoro_loop();
@@ -15,3 +17,4 @@ extern int pomodoro_times[];
 extern int current_pomodoro;
 extern time_t last_pomodoro_update;
 extern uint16_t pomodoroStatusColors[];
+extern PubSubClient client;

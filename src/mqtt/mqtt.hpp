@@ -8,9 +8,10 @@
 #define MQTT_PORT     8883
 #define MQTT_TOPIC_COMMAND "esp/rgb/set"
 
+extern WiFiClientSecure espClient;
 extern PubSubClient client;
 
-void loop_MQTT();
+void setup_MQTT();
 void attempt_MQTT_reconnect();
 void on_MQTT_message(char* topic, byte* payload, unsigned int length);
 

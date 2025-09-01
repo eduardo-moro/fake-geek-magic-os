@@ -16,29 +16,37 @@ unsigned long lastUserActivity = 0;
 
 MenuCommand commandHandler[] = {
     {handleMenuClick, handleMenuPress, handleMenuDoubleClick, doNothing}, // WIFI
-    {handleClockQuit, doNothing, doNothing, doNothing}                    // RELOGIO
+    {handleClockQuit, doNothing, doNothing, doNothing},                    // RELOGIO
+    {handleClockQuit, doNothing, doNothing, doNothing}                    // POMODORO
+};
+
+std::map<String, int> routeMap = {
+    {"menu", 0},
+    {"clock", 1},
+    {"pomodoro", 2}
 };
 
 void touch_loop()
 {
-    if (route == "menu")
-    {
-        current_route = 0;
-    }
-    else if (route == "clock")
-    {
-        current_route = 1;
-    }
+    updateRoute(route);
     detectMenuTouch();
+}
+
+void updateRoute(const String& route) {
+    auto it = routeMap.find(route);
+    if (it != routeMap.end()) {
+        current_route = it->second;
+    } else {
+        current_route = -1;
+    }
 }
 
 void detectMenuTouch()
 {
     int reading = digitalRead(BUTTON_PIN);
 
-    // Added debounce logic
     if (reading == LOW)
-    { // Button pressed
+    {
         if (buttonState == BTN_RELEASED)
         {
             lastDebounceTime = millis();
@@ -46,7 +54,7 @@ void detectMenuTouch()
         }
     }
     else
-    { // Button released
+    {
         buttonState = BTN_RELEASED;
     }
 

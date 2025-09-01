@@ -4,6 +4,10 @@ const int PWM_CHANNEL = 0;
 
 TFT_eSPI tft = TFT_eSPI();
 
+// Mqtt connection
+WiFiClientSecure espClient;
+PubSubClient client(espClient);
+
 // State definitions
 int current_menu = 0;
 int valid_menu_items = 0;
@@ -95,6 +99,7 @@ void setup()
     time_t now = time(nullptr);
 
     host_webpage();
+    setup_MQTT();
 
     struct tm timeinfo;
     localtime_r(&now, &timeinfo);
@@ -114,6 +119,8 @@ void setup()
 
 void loop()
 {
+  client.loop();
+
   touch_loop();
   server.handleClient();
 

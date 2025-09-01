@@ -6,6 +6,7 @@
 #include "assets/qr_codes/wifi_qr_code.hpp"
 #include "ui/menu/menu.hpp"
 #include "TFT_eSPI.h"
+#include "map"
 
 extern bool wasTouched;
 extern bool longPressDisplayed;
@@ -30,6 +31,7 @@ void handleMenuRelease();
 void handleClockQuit();
 void doNothing();
 void registerUserActivity();
+void updateRoute(const String& route);
 
 typedef struct MenuCommand
 {

@@ -146,4 +146,6 @@ void loop()
 
     qr_code_timeout();
   }
+
+  loop_MQTT();
 }

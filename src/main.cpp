@@ -7,6 +7,8 @@ TFT_eSPI tft = TFT_eSPI();
 // Mqtt connection
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
+unsigned long lastMqttAttempt = 0;
+const unsigned long mqttReconnectInterval = 500;
 
 // State definitions
 int current_menu = 0;
@@ -85,8 +87,6 @@ void setup()
   tft.init();
   tft.setRotation(0);
   tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextDatum(MC_DATUM);
 
   EEPROM.begin(EEPROM_SIZE);
 
@@ -95,11 +95,12 @@ void setup()
     Serial.println("Connected to saved network:");
     Serial.println(WiFi.SSID());
 
+    setup_MQTT();
+
     configTime(TZ_OFFSET, TZ_DST, "pool.ntp.org", "time.nist.gov");
     time_t now = time(nullptr);
 
     host_webpage();
-    setup_MQTT();
 
     struct tm timeinfo;
     localtime_r(&now, &timeinfo);
@@ -107,6 +108,9 @@ void setup()
                   timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec,
                   timeinfo.tm_mday, timeinfo.tm_mon + 1, timeinfo.tm_year + 1900);
   }
+
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextDatum(MC_DATUM);
 
   initializeMenu();
 
@@ -119,7 +123,14 @@ void setup()
 
 void loop()
 {
-  client.loop();
+  if (!client.loop()) 
+  {
+    unsigned long now = millis();
+    if (now - lastMqttAttempt > mqttReconnectInterval) {
+      lastMqttAttempt = now;
+      attempt_MQTT_reconnect();
+    }
+  }
 
   touch_loop();
   server.handleClient();
@@ -153,6 +164,4 @@ void loop()
 
     qr_code_timeout();
   }
-
-  loop_MQTT();
 }

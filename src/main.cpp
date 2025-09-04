@@ -5,7 +5,7 @@ const int PWM_CHANNEL = 0;
 TFT_eSPI tft = TFT_eSPI();
 
 // Mqtt connection
-WiFiClientSecure espClient;
+WiFiClient espClient;
 PubSubClient client(espClient);
 unsigned long lastMqttAttempt = 0;
 const unsigned long mqttReconnectInterval = 500;
@@ -50,7 +50,7 @@ int timebox = 0;
 time_t last_timebox_update = 0;
 
 // Pomodoro
-int pomodoro_times[] = {
+const int pomodoro_times[] = {
   25 * 60, 5 * 60, // work, rest
   25 * 60, 5 * 60, // work, rest
   25 * 60, 5 * 60, // work, rest
@@ -60,7 +60,7 @@ int pomodoro_times[] = {
 int current_pomodoro = 0;
 int pomodoro_c = pomodoro_times[current_pomodoro];
 time_t last_pomodoro_update = 0;
-uint16_t pomodoroStatusColors[] = {
+uint16_t const pomodoroStatusColors[] = {
     TFT_ORANGE,
     TFT_CYAN, 
     TFT_ORANGE,
@@ -95,13 +95,9 @@ void setup()
     Serial.println("Connected to saved network:");
     Serial.println(WiFi.SSID());
 
-    setup_MQTT();
-
-    configTime(TZ_OFFSET, TZ_DST, "pool.ntp.org", "time.nist.gov");
-    time_t now = time(nullptr);
-
     host_webpage();
 
+    time_t now = time(nullptr);
     struct tm timeinfo;
     localtime_r(&now, &timeinfo);
     Serial.printf("Current time in Brasília: %02d:%02d:%02d, %02d/%02d/%04d\n",

@@ -79,6 +79,9 @@ void start_client(const char *ssid, const char *password)
 
     saveNetwork(ssid, password);
 
+    configTime(TZ_OFFSET, TZ_DST, "pool.ntp.org", "time.nist.gov");
+    setup_MQTT();
+
     Serial.println("Connected to WiFi");
     Serial.println(WiFi.localIP());
 
@@ -290,6 +293,11 @@ bool connectToBestNetwork()
             loop_wifi_icon();
             delay(100);
             Serial.print(".");
+        }
+
+        if (WiFi.status() == WL_CONNECTED) {
+            configTime(TZ_OFFSET, TZ_DST, "pool.ntp.org", "time.nist.gov");
+            setup_MQTT();
         }
 
         return WiFi.status() == WL_CONNECTED;

@@ -13,8 +13,8 @@ void drawPomodoroTime();
 
 extern TFT_eSPI tft;
 extern int pomodoro_c;
-extern int pomodoro_times[];
+extern const int pomodoro_times[];
 extern int current_pomodoro;
 extern time_t last_pomodoro_update;
-extern uint16_t pomodoroStatusColors[];
+extern const uint16_t pomodoroStatusColors[];
 extern PubSubClient client;

@@ -1,10 +1,8 @@
 #include "mqtt.hpp"
 
-const char* mqtt_username = "clock";
-const char* mqtt_password = "Clock-01";
-
 void setup_MQTT() {
-    espClient.setInsecure();
+    Serial.println("setup_MQTT called");
+    Serial.println("Setting up MQTT...");
     client.setServer(MQTT_BROKER, MQTT_PORT);
     
     String client_id = "esp32-client-" + String(WiFi.macAddress());
@@ -13,10 +11,18 @@ void setup_MQTT() {
 }
 
 void attempt_MQTT_reconnect() {
-  Serial.println("Connecting to mqtt...");
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi not connected, skipping MQTT reconnect.");
+    return;
+  }
+  Serial.println("Attempting MQTT connection...");
   String client_id = "esp32-client-" + String(WiFi.macAddress());
-  if (!client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
-    Serial.print("MQTT reconnect failed, state=");
-    Serial.println(client.state());
+  if (!client.connect(client_id.c_str())) {
+    Serial.print("MQTT connection failed, rc=");
+    Serial.print(client.state());
+    Serial.println(" Retrying in 5 seconds...");
+  } else {
+    Serial.println("MQTT connected!");
+    client.publish("ehpmcp/esp/status/clock", "Clock is online!");
   }
 }

@@ -57,15 +57,15 @@
 #define TFT_BACKLIGHT_ON LOW
 
 // Load fonts
-#define LOAD_GLCD
-#define LOAD_FONT2
-#define LOAD_FONT4
-#define LOAD_FONT6
-#define LOAD_FONT7
-#define LOAD_FONT8
+// #define LOAD_GLCD
+// #define LOAD_FONT2
+// #define LOAD_FONT4
+// #define LOAD_FONT6
+// #define LOAD_FONT7
+// #define LOAD_FONT8
 #define LOAD_GFXFF
 
-#define SMOOTH_FONT
+// #define SMOOTH_FONT
 
 // Color order (try commenting this if colors are off)
 #define TFT_RGB_ORDER TFT_BGR

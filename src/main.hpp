@@ -12,3 +12,4 @@
 #include "pomodoro/pomodoro.hpp"
 #include "mqtt/mqtt.hpp"
 #include "WiFiClientSecure.h"
+#include "pixels/pixels.hpp"

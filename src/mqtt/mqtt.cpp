@@ -26,3 +26,7 @@ void attempt_MQTT_reconnect() {
     client.publish("ehpmcp/esp/status/clock", "Clock is online!");
   }
 }
+
+void on_MQTT_message(char* topic, byte* payload, unsigned int length) {
+  
+}

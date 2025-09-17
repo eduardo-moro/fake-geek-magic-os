@@ -8,6 +8,7 @@
 #define MQTT_BROKER   "broker.emqx.io"
 #define MQTT_PORT     1883
 #define MQTT_TOPIC_COMMAND "ehpmcp/esp/rgb/set"
+#define MQTT_TOPIC_PIXELS "ehpmcp/esp/pixel/set"
 
 extern WiFiClient espClient;
 extern PubSubClient client;

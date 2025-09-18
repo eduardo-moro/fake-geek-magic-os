@@ -41,7 +41,6 @@ void prevMenu();
 void handleWifiClick();
 void handleClockClick();
 void handlePomodoroClick();
-void doNothing();
 void updateMenuLabels();
 void initializeMenu();
 void handleTimeboxClick();
@@ -49,5 +48,7 @@ void handleBrightClick();
 void handleSelectWifi();
 void handleWifiSelected();
 void returnToMenu();
+void handleArtClick();
+void handleAnimateClick();
 
 #endif // MENU_H

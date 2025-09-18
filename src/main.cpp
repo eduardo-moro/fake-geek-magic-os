@@ -71,6 +71,14 @@ uint16_t const pomodoroStatusColors[] = {
     TFT_GREEN
 };
 
+void handleArtClick() {
+    start_pixel_art();
+}
+
+void handleAnimateClick() {
+    start_animate();
+}
+
 void setup()
 {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -119,13 +127,12 @@ void setup()
 
 void loop()
 {
-  if (!client.loop()) 
-  {
-    unsigned long now = millis();
-    if (now - lastMqttAttempt > mqttReconnectInterval) {
-      lastMqttAttempt = now;
-      attempt_MQTT_reconnect();
-    }
+  if (!client.connected()) {
+    attempt_MQTT_reconnect();
+  }
+
+  if (!client.loop()) {
+    Serial.println("client.loop() returned false");
   }
 
   touch_loop();
@@ -152,6 +159,14 @@ void loop()
   else if (route == "pomodoro")
   {
     pomodoro_loop();
+  }
+  else if (route == "pixel")
+  {
+    pixels_loop();
+  }
+  else if (route == "animate")
+  {
+    animate_loop();
   }
 
   if (ap_active)

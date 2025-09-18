@@ -17,13 +17,17 @@ unsigned long lastUserActivity = 0;
 MenuCommand commandHandler[] = {
     {handleMenuClick, handleMenuPress, handleMenuDoubleClick, doNothing}, // WIFI
     {handleClockQuit, doNothing, doNothing, doNothing},                    // RELOGIO
-    {handleClockQuit, doNothing, doNothing, doNothing}                    // POMODORO
+    {handleClockQuit, doNothing, doNothing, doNothing},                    // POMODORO
+    {handlePixelQuit, doNothing, doNothing, doNothing},                     // PIXEL
+    {handlePixelQuit, doNothing, doNothing, doNothing}                      // ANIMATE
 };
 
 std::map<String, int> routeMap = {
     {"menu", 0},
     {"clock", 1},
-    {"pomodoro", 2}
+    {"pomodoro", 2},
+    {"pixel", 3},
+    {"animate", 4}
 };
 
 void touch_loop()
@@ -147,6 +151,16 @@ void handleClockQuit()
     route = "menu";
     initializeMenu();
 }
+
+void handlePixelQuit()
+{
+    Serial.println("pixel click");
+    route = "menu";
+    is_displaying_image = false;
+    initializeMenu();
+}
+
+void doNothing() {}
 
 void registerUserActivity()
 {

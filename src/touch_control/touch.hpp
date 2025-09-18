@@ -18,6 +18,7 @@ extern int current_menu;
 extern TFT_eSPI tft;
 extern String route;
 extern unsigned long lastUserActivity;
+extern bool is_displaying_image;
 
 bool isTouched();
 long readCapacitiveSensor(int pin);
@@ -29,6 +30,7 @@ void handleMenuPress();
 void handleMenuDoubleClick();
 void handleMenuRelease();
 void handleClockQuit();
+void handlePixelQuit();
 void doNothing();
 void registerUserActivity();
 void updateRoute(const String& route);

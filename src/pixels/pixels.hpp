@@ -5,9 +5,8 @@
 
 extern bool is_displaying_image;
 
-// Struct to reassemble image parts
 typedef struct {
-    char data[577]; // 24*24 = 576 + 1 for null terminator
+    char data[577]; 
     bool received_parts[4];
     int image_id;
 } ImageReassemblyBuffer;

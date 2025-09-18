@@ -15,9 +15,9 @@ unsigned long lastDebounceTime = 0;
 unsigned long lastUserActivity = 0;
 
 MenuCommand commandHandler[] = {
-    {handleMenuClick, handleMenuPress, handleMenuDoubleClick, doNothing}, // WIFI
-    {handleClockQuit, doNothing, doNothing, doNothing},                    // RELOGIO
-    {handleClockQuit, doNothing, doNothing, doNothing},                    // POMODORO
+    {handleMenuClick, handleMenuPress, handleMenuDoubleClick, doNothing},   // WIFI
+    {handleClockQuit, doNothing, doNothing, doNothing},                     // RELOGIO
+    {handleClockQuit, doNothing, doNothing, doNothing},                     // POMODORO
     {handlePixelQuit, doNothing, doNothing, doNothing},                     // PIXEL
     {handlePixelQuit, doNothing, doNothing, doNothing}                      // ANIMATE
 };

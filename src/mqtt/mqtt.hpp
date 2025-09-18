@@ -6,10 +6,6 @@
 #include "PubSubClient.h"
 #include "WiFiClient.h"
 
-// IMPORTANT: By default, PubSubClient has a buffer size of 256 bytes.
-// If you are sending messages larger than this, you need to increase the buffer size.
-// You can do this by adding the following line before including PubSubClient.h:
-
 #define MQTT_BROKER   "broker.emqx.io"
 #define MQTT_PORT     1883
 #define MQTT_TOPIC_COMMAND "ehpmcp/esp/rgb/set"

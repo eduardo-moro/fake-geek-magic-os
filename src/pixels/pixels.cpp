@@ -5,19 +5,16 @@
 extern TFT_eSPI tft;
 extern String route;
 
-// 24x24 grid for grayscale values
 uint8_t pixel_data[24][24];
 bool is_displaying_image = false;
 unsigned long art_display_start_time = 0;
 
-// Image history buffer
 uint8_t image_history[10][24][24];
 int history_index = 0;
 int images_in_history = 0;
 
 ImageReassemblyBuffer current_image_buffer;
 
-// Grayscale color palette for 0-9 values
 const uint16_t color_map[] = {
     TFT_BLACK,                  // 0 #000000 - black (outline, contrast)
     tft.color565(228, 59, 68),  // 1 #e43b44 - strong red
@@ -97,7 +94,7 @@ void animate_loop() {
     static int current_frame = 0;
     static unsigned long lastAnimTime = 0;
 
-    if (millis() - lastAnimTime > 50) { // Change frame every 50ms
+    if (millis() - lastAnimTime > 100) {
         for (int y = 0; y < 24; ++y) {
             for (int x = 0; x < 24; ++x) {
                 uint8_t color_index = image_history[current_frame][y][x];
@@ -118,18 +115,15 @@ void process_image_part(int image_id, int part_number, const char* part_data) {
     Serial.println(part_number);
 
     if (current_image_buffer.image_id != image_id) {
-        // New image, reset buffer
         memset(current_image_buffer.data, 0, sizeof(current_image_buffer.data));
         memset(current_image_buffer.received_parts, 0, sizeof(current_image_buffer.received_parts));
         current_image_buffer.image_id = image_id;
     }
 
-    // Copy part data to buffer
     int start_index = (part_number - 1) * (576 / 4);
     memcpy(current_image_buffer.data + start_index, part_data, strlen(part_data));
     current_image_buffer.received_parts[part_number - 1] = true;
 
-    // Check if all parts received
     bool all_parts_received = true;
     for (int i = 0; i < 4; ++i) {
         if (!current_image_buffer.received_parts[i]) {
@@ -142,9 +136,8 @@ void process_image_part(int image_id, int part_number, const char* part_data) {
         Serial.println("All parts received. Processing full image.");
         set_pixel_data(current_image_buffer.data);
         start_pixel_art();
-        // Reset buffer for next image
         memset(current_image_buffer.data, 0, sizeof(current_image_buffer.data));
         memset(current_image_buffer.received_parts, 0, sizeof(current_image_buffer.received_parts));
-        current_image_buffer.image_id = -1; // Reset image ID
+        current_image_buffer.image_id = -1;
     }
 }

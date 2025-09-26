@@ -10,6 +10,7 @@ void pomodoro_loop();
 void drawPomodoroFullScreen();
 void top_pomodoro_clock_loop();
 void drawPomodoroTime();
+void pomodoro_background_handler();
 
 extern TFT_eSPI tft;
 extern int pomodoro_c;

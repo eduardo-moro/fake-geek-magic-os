@@ -3,7 +3,6 @@
 #include "main.hpp"
 
 extern TFT_eSPI tft;
-extern String route;
 
 uint8_t pixel_data[24][24];
 bool is_displaying_image = false;
@@ -54,6 +53,7 @@ void set_pixel_data(const char *data) {
 
 void start_pixel_art() {
     Serial.println("start_pixel_art called");
+    previous_route = route;
     route = "pixel";
     is_displaying_image = true;
     art_display_start_time = millis();
@@ -64,10 +64,15 @@ void pixels_loop() {
     if (!is_displaying_image) return;
 
     if (millis() - art_display_start_time > 30000) {
-        Serial.println("30 second timeout reached. Returning to menu.");
-        route = "menu";
+        Serial.println("30 second timeout reached. Returning to previous route.");
+        route = previous_route;
         is_displaying_image = false;
-        initializeMenu();
+        if (route == "pomodoro") {
+            tft.fillScreen(TFT_BLACK);
+        } else {
+            route = "menu";
+            initializeMenu();
+        }
         return;
     }
 

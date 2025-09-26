@@ -43,6 +43,7 @@ DNSServer dnsServer;
 
 // Routing
 String route = "menu";
+String previous_route = "";
 
 // Timebox
 int initial_timebox = 10;
@@ -137,6 +138,10 @@ void loop()
 
   touch_loop();
   server.handleClient();
+
+  if (route == "pixel" && previous_route == "pomodoro") {
+    pomodoro_background_handler();
+  }
 
   if (route == "menu" && (millis() - lastUserActivity > 15000))
   {

@@ -128,16 +128,18 @@ void setup()
 
 void loop()
 {
-  if (!client.connected()) {
-    attempt_MQTT_reconnect();
-  }
-
-  if (!client.loop()) {
-    Serial.println("client.loop() returned false");
-  }
-
   touch_loop();
   server.handleClient();
+
+  if (WiFi.status() == WL_CONNECTED || ap_active) {
+    if (!client.connected()) {
+      attempt_MQTT_reconnect();
+    }
+    
+    if (!client.loop()) {
+      Serial.println("client.loop() returned false");
+    }
+  }
 
   if (route == "pixel" && previous_route == "pomodoro") {
     pomodoro_background_handler();

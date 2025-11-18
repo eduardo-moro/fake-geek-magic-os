@@ -31,6 +31,7 @@ void handleMenuDoubleClick();
 void handleMenuRelease();
 void handleClockQuit();
 void handlePixelQuit();
+void handleWifiQrQuit();
 void doNothing();
 void registerUserActivity();
 void updateRoute(const String& route);

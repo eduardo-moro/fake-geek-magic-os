@@ -15,11 +15,13 @@ unsigned long lastDebounceTime = 0;
 unsigned long lastUserActivity = 0;
 
 MenuCommand commandHandler[] = {
-    {handleMenuClick, handleMenuPress, handleMenuDoubleClick, doNothing},   // WIFI
-    {handleClockQuit, doNothing, doNothing, doNothing},                     // RELOGIO
+    {handleMenuClick, handleMenuPress, handleMenuDoubleClick, doNothing},   // MENU
+    {handleClockQuit, doNothing, doNothing, doNothing},                     // CLOCK
     {handleClockQuit, doNothing, doNothing, doNothing},                     // POMODORO
     {handlePixelQuit, doNothing, doNothing, doNothing},                     // PIXEL
-    {handlePixelQuit, doNothing, doNothing, doNothing}                      // ANIMATE
+    {handlePixelQuit, doNothing, doNothing, doNothing},                     // ANIMATE
+    {handleWifiQrQuit, doNothing, doNothing, doNothing},                    // WIFI_QR_CODE
+    {doNothing, doNothing, doNothing, doNothing}                            // WIFI_SELECT
 };
 
 std::map<String, int> routeMap = {
@@ -27,7 +29,9 @@ std::map<String, int> routeMap = {
     {"clock", 1},
     {"pomodoro", 2},
     {"pixel", 3},
-    {"animate", 4}
+    {"animate", 4},
+    {"wifi_qr_code", 5},
+    {"wifi_select", 6}
 };
 
 void touch_loop()
@@ -41,15 +45,23 @@ void updateRoute(const String& route) {
     if (it != routeMap.end()) {
         current_route = it->second;
     } else {
-        current_route = -1;
+        Serial.print("Warning: Unknown route '");
+        Serial.print(route);
+        Serial.println("', defaulting to menu");
+        current_route = 0; // Default to menu instead of -1
     }
+}
+
+bool isValidRoute() {
+    return current_route >= 0 && current_route < (sizeof(commandHandler) / sizeof(commandHandler[0]));
 }
 
 void detectMenuTouch()
 {
     int reading = digitalRead(BUTTON_PIN);
 
-    if (reading == LOW)
+    // Capacitive touch sensors read HIGH when touched (opposite of pull-up buttons)
+    if (reading == HIGH)
     {
         if (buttonState == BTN_RELEASED)
         {
@@ -82,7 +94,9 @@ void detectMenuTouch()
 
         if (duration >= 700)
         {
-            commandHandler[current_route].onRelease();
+            if (isValidRoute()) {
+                commandHandler[current_route].onRelease();
+            }
             registerUserActivity();
             Serial.println("released");
             digitalWrite(11, LOW);
@@ -92,7 +106,9 @@ void detectMenuTouch()
             if (waitingForSecondTap)
             {
                 Serial.println("double");
-                commandHandler[current_route].onDoubleClick();
+                if (isValidRoute()) {
+                    commandHandler[current_route].onDoubleClick();
+                }
                 registerUserActivity();
                 waitingForSecondTap = false;
                 potentialSingleClick = false;
@@ -111,7 +127,9 @@ void detectMenuTouch()
     if (wasTouched && (millis() - touchStartTime > 700) && !longPressDisplayed)
     {
         Serial.println("long");
-        commandHandler[current_route].onLongPress();
+        if (isValidRoute()) {
+            commandHandler[current_route].onLongPress();
+        }
         registerUserActivity();
         longPressDisplayed = true;
     }
@@ -119,7 +137,9 @@ void detectMenuTouch()
     if (potentialSingleClick && millis() - lastTapTime > 300)
     {
         Serial.println("click");
-        commandHandler[current_route].onClick();
+        if (isValidRoute()) {
+            commandHandler[current_route].onClick();
+        }
         registerUserActivity();
         potentialSingleClick = false;
         waitingForSecondTap = false;
@@ -157,6 +177,13 @@ void handlePixelQuit()
     Serial.println("pixel click");
     route = "menu";
     is_displaying_image = false;
+    initializeMenu();
+}
+
+void handleWifiQrQuit()
+{
+    Serial.println("wifi qr quit");
+    route = "menu";
     initializeMenu();
 }
 

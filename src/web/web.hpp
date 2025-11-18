@@ -20,7 +20,7 @@
 #endif
 
 #define FS_NO_GLOBALS
-#define MAX_NETWORKS 5
+#define MAX_NETWORKS 10
 #define EEPROM_SIZE sizeof(NetworkConfig) * MAX_NETWORKS
 
 struct NetworkConfig

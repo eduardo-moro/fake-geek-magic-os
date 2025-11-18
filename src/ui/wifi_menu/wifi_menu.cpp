@@ -21,24 +21,17 @@ void handleWifiConnect(const String& ssid) {
     Serial.print("Connecting to: ");
     Serial.println(ssid);
 
-    // Show connecting message
-    tft.fillScreen(TFT_BLACK);
-    tft.setTextSize(2);
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setTextDatum(MC_DATUM);
-    tft.setTextPadding(0);
-
-    tft.drawString("Connecting...", 120, 100);
-    tft.drawString(ssid, 120, 130);
-
-    // Connect to the network
-    connectToNetwork(ssid);
-
-    // After connection attempt, return to menu
-    delay(2000);
+    // First, properly cleanup the list menu and set route
     destroyListMenu();
-    route = "menu";
-    initializeMenu();
+    route = "menu"; // Set route before connection attempt
+
+    // Note: connectToNetwork() -> start_client() handles:
+    // 1. Screen clearing
+    // 2. WiFi animation while connecting
+    // 3. Calling initializeMenu() when done
+    // 4. Displaying the IP address
+    // So we just need to call it directly
+    connectToNetwork(ssid);
 }
 
 // Show the WiFi selection menu

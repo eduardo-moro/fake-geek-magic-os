@@ -92,8 +92,15 @@ void renderListMenu() {
     tft.setTextDatum(TL_DATUM); // Top-left alignment
     tft.setTextPadding(0); // No padding
 
-    // Clear the entire screen first to prevent artifacts
-    tft.fillScreen(TFT_BLACK);
+    // Check if we need full redraw or can do partial
+    bool scrollChanged = (menuState.scrollOffset != menuState.previousScrollOffset);
+    bool needsFullRedraw = menuState.needsFullRedraw || scrollChanged;
+
+    // Only clear screen if we need full redraw
+    if (needsFullRedraw) {
+        tft.fillScreen(TFT_BLACK);
+        menuState.needsFullRedraw = false;
+    }
 
     int displayCount = min(menuState.visibleItems, (int)menuState.items.size());
 
@@ -103,6 +110,12 @@ void renderListMenu() {
 
         int y = MENU_TOP + (i * ITEM_HEIGHT);
         bool isFocused = (itemIndex == menuState.currentIndex);
+        bool wasPreviouslyFocused = (itemIndex == menuState.previousIndex && !scrollChanged);
+
+        // Skip rendering if nothing changed for this item (partial redraw optimization)
+        if (!needsFullRedraw && !isFocused && !wasPreviouslyFocused) {
+            continue; // This item doesn't need redrawing
+        }
 
         // Determine colors based on state
         uint16_t bgColor, fgColor, borderColor;
@@ -191,10 +204,15 @@ void renderListMenu() {
             tft.print(value);
         }
     }
+    tft.setTextDatum(MC_DATUM); 
 }
 
 void listMenuNext() {
     if (menuState.items.size() == 0) return;
+
+    // Save previous state for partial redraw
+    menuState.previousIndex = menuState.currentIndex;
+    menuState.previousScrollOffset = menuState.scrollOffset;
 
     menuState.currentIndex++;
     if (menuState.currentIndex >= menuState.items.size()) {
@@ -215,6 +233,10 @@ void listMenuNext() {
 
 void listMenuPrev() {
     if (menuState.items.size() == 0) return;
+
+    // Save previous state for partial redraw
+    menuState.previousIndex = menuState.currentIndex;
+    menuState.previousScrollOffset = menuState.scrollOffset;
 
     menuState.currentIndex--;
     if (menuState.currentIndex < 0) {

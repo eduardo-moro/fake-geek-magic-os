@@ -21,7 +21,8 @@ MenuCommand commandHandler[] = {
     {handlePixelQuit, doNothing, doNothing, doNothing},                     // PIXEL
     {handlePixelQuit, doNothing, doNothing, doNothing},                     // ANIMATE
     {handleWifiQrQuit, doNothing, doNothing, doNothing},                    // WIFI_QR_CODE
-    {doNothing, doNothing, doNothing, doNothing}                            // WIFI_SELECT
+    {handleListMenuClick, handleListMenuSelect, handleListMenuDoubleClick, doNothing},  // WIFI_SELECT
+    {handleListMenuClick, handleListMenuSelect, handleListMenuDoubleClick, doNothing}   // TEST_MENU
 };
 
 std::map<String, int> routeMap = {
@@ -31,7 +32,8 @@ std::map<String, int> routeMap = {
     {"pixel", 3},
     {"animate", 4},
     {"wifi_qr_code", 5},
-    {"wifi_select", 6}
+    {"wifi_select", 6},
+    {"test_menu", 7}
 };
 
 void touch_loop()
@@ -185,6 +187,24 @@ void handleWifiQrQuit()
     Serial.println("wifi qr quit");
     route = "menu";
     initializeMenu();
+}
+
+void handleListMenuClick()
+{
+    Serial.println("list menu click - next");
+    listMenuNext();
+}
+
+void handleListMenuDoubleClick()
+{
+    Serial.println("list menu double click - prev");
+    listMenuPrev();
+}
+
+void handleListMenuSelect()
+{
+    Serial.println("list menu select");
+    listMenuSelect();
 }
 
 void doNothing() {}

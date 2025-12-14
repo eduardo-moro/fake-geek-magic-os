@@ -1,7 +1,7 @@
 #ifndef ANIMATION_H
 #define ANIMATION_H
 
-#include "arduino.h"
+#include <Arduino.h>
 #include "TFT_eSPI.h"
 #include "cstdint"
 #include "./assets/menu/icons/wifi_icon.hpp"

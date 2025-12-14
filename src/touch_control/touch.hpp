@@ -1,7 +1,7 @@
 #ifndef TOUCH_H
 #define TOUCH_H
 
-#include "arduino.h"
+#include <Arduino.h>
 #include "config/pins.hpp"
 #include "assets/qr_codes/wifi_qr_code.hpp"
 #include "ui/menu/menu.hpp"

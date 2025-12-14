@@ -1,7 +1,7 @@
 #ifndef PIXELS_H
 #define PIXELS_H
 
-#include "Arduino.h"
+#include <Arduino.h>
 
 extern bool is_displaying_image;
 

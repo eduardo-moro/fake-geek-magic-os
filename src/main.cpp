@@ -101,17 +101,17 @@ void setup()
 
   if (connectToBestNetwork())
   {
-    Serial.println("Connected to saved network:");
-    Serial.println(WiFi.SSID());
+    // Serial.println("Connected to saved network:");
+    // Serial.println(WiFi.SSID());
 
     host_webpage();
 
     time_t now = time(nullptr);
     struct tm timeinfo;
     localtime_r(&now, &timeinfo);
-    Serial.printf("Current time in Brasília: %02d:%02d:%02d, %02d/%02d/%04d\n",
-                  timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec,
-                  timeinfo.tm_mday, timeinfo.tm_mon + 1, timeinfo.tm_year + 1900);
+    // Serial.printf("Current time in Brasília: %02d:%02d:%02d, %02d/%02d/%04d\n",
+    //               timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec,
+    //               timeinfo.tm_mday, timeinfo.tm_mon + 1, timeinfo.tm_year + 1900);
   }
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -123,11 +123,23 @@ void setup()
   {
     tft.setTextSize(1);
     tft.drawString(WiFi.localIP().toString(), 120, 14);
+    
+    setup_MQTT();
   }
 }
 
 void loop()
 {
+  if (currentNotification.hasUnread) {
+    displayNotification();
+    if (digitalRead(BUTTON_PIN) == HIGH) { // button is touched
+        currentNotification.hasUnread = false;
+        tft.fillScreen(TFT_BLACK);
+        delay(100); // simple debounce
+    }
+    return;
+  }
+
   touch_loop();
   server.handleClient();
 
@@ -137,7 +149,7 @@ void loop()
     }
     
     if (!client.loop()) {
-      Serial.println("client.loop() returned false");
+      // Serial.println("client.loop() returned false");
     }
   }
 

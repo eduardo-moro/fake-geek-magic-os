@@ -147,10 +147,16 @@ void loop()
 
   if (route == "menu" && (millis() - lastUserActivity > 15000))
   {
-    route = "clock";
+    /* to use clock as main*/
+    /*route = "clock";
     setBrightnessPercent(5);
     delay(500);
-    start_clock();
+    start_clock();*/
+
+    route = "pomodoro";
+    setBrightnessPercent(5);
+    delay(500);
+    start_pomodoro();
   }
 
   if (route == "menu")

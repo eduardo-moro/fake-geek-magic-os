@@ -3,7 +3,7 @@
 MenuItem menu_items[] = {
     {"RELOGIO", nextMenu, handleClockClick, prevMenu, {clock_0_bits, clock_1_bits, clock_2_bits, clock_3_bits}, 2, NULL},
     {"WIFI", nextMenu, handleWifiClick, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
-    {"REDES", nextMenu, handleSelectWifi, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
+    {"REDES", nextMenu, handleSelectWifiClick, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
     {"BRILHO", nextMenu, handleBrightClick, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
     {"TIMEBOX", nextMenu, handleTimeboxClick, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL},
     {"POMODORO", nextMenu, handlePomodoroClick, prevMenu, {pomodoro_0_bits, pomodoro_1_bits, pomodoro_2_bits, pomodoro_3_bits}, 2, NULL},
@@ -72,7 +72,7 @@ void handleWifiClick()
     start_ap();
 }
 
-void handleSelectWifi()
+void handleSelectWifiClick()
 {
     // Use the new list menu system for WiFi selection
     showWifiSelectionMenu();

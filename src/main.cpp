@@ -29,8 +29,8 @@ int currentAnimFrame = 0;
 unsigned long lastAnimTimeBat = 0;
 
 // WiFi AP state
-boolean ap_active = false;
-boolean ap_connected = false;
+bool ap_active = false;
+bool ap_connected = false;
 unsigned long ap_active_time = 0;
 
 // Web server

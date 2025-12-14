@@ -17,6 +17,8 @@
 #include "../assets/menu/icons/settings_icon.hpp"
 #include "../assets/qr_codes/wifi_qr_code.hpp"
 #include "../ui/animation/animation.hpp"
+#include "../ui/wifi_menu/wifi_menu.hpp"
+#include "../ui/test_menu/test_menu.hpp"
 #include "../web/web.hpp"
 #include "main.hpp"
 
@@ -45,10 +47,11 @@ void updateMenuLabels();
 void initializeMenu();
 void handleTimeboxClick();
 void handleBrightClick();
-void handleSelectWifi();
+void handleSelectWifiClick();
 void handleWifiSelected();
 void returnToMenu();
 void handleArtClick();
 void handleAnimateClick();
+void handleTestMenuClick();
 
 #endif // MENU_H

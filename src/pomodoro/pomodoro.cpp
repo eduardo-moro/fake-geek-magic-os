@@ -124,3 +124,26 @@ void pomodoro_loop()
         lastPrint = now;
     }
 }
+
+void pomodoro_background_handler() {
+    static time_t last_background_update = 0;
+    time_t now = time(nullptr);
+
+    if (now != last_background_update) {
+        last_background_update = now;
+        last_pomodoro_update = now;
+
+        if (pomodoro_c > 0) {
+            pomodoro_c--;
+        } else {
+            size_t length = 8;
+            current_pomodoro = (current_pomodoro + 1) % length;
+            pomodoro_c = pomodoro_times[current_pomodoro];
+            client.publish(MQTT_TOPIC_COMMAND, colorToString(360, TFT_BLACK).c_str());
+        }
+
+        int limit = pomodoro_times[current_pomodoro];
+        int angle = 361 - map(pomodoro_c, 0, limit, 0, 360);
+        client.publish(MQTT_TOPIC_COMMAND, colorToString(angle, pomodoroStatusColors[current_pomodoro]).c_str());
+    }
+}

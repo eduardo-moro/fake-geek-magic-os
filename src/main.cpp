@@ -43,6 +43,7 @@ DNSServer dnsServer;
 
 // Routing
 String route = "menu";
+String previous_route = "";
 
 // Timebox
 int initial_timebox = 10;
@@ -127,23 +128,35 @@ void setup()
 
 void loop()
 {
-  if (!client.connected()) {
-    attempt_MQTT_reconnect();
-  }
-
-  if (!client.loop()) {
-    Serial.println("client.loop() returned false");
-  }
-
   touch_loop();
   server.handleClient();
 
+  if (WiFi.status() == WL_CONNECTED || ap_active) {
+    if (!client.connected()) {
+      attempt_MQTT_reconnect();
+    }
+    
+    if (!client.loop()) {
+      Serial.println("client.loop() returned false");
+    }
+  }
+
+  if (route == "pixel" && previous_route == "pomodoro") {
+    pomodoro_background_handler();
+  }
+
   if (route == "menu" && (millis() - lastUserActivity > 15000))
   {
-    route = "clock";
+    /* to use clock as main*/
+    /*route = "clock";
     setBrightnessPercent(5);
     delay(500);
-    start_clock();
+    start_clock();*/
+
+    route = "pomodoro";
+    setBrightnessPercent(5);
+    delay(500);
+    start_pomodoro();
   }
 
   if (route == "menu")

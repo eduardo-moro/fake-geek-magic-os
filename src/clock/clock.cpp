@@ -86,6 +86,7 @@ void drawTimeFullScreen()
 void start_clock()
 {
     tft.fillScreen(TFT_BLACK);
+    tft.setTextDatum(MC_DATUM);
     drawTimeFullScreen();
 }
 

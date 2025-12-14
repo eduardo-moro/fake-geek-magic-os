@@ -2,7 +2,7 @@
 #define WEB_H
 
 #include "LittleFS.h"
-#include <Arduino.h>
+#include "Arduino.h"
 #include "TFT_eSPI.h"
 #include "DNSServer.h"
 #include "../ui/animation/animation.hpp"

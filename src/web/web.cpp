@@ -70,6 +70,8 @@ void start_client(const char *ssid, const char *password)
     unsigned long start = millis();
 
     tft.fillScreen(TFT_BLACK);
+    tft.setTextDatum(MC_DATUM);
+
     while (WiFi.status() != WL_CONNECTED && millis() - start < 10000)
     {
         loop_wifi_icon();

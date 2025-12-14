@@ -13,3 +13,6 @@
 #include "mqtt/mqtt.hpp"
 #include "WiFiClientSecure.h"
 #include "pixels/pixels.hpp"
+
+extern String route;
+extern String previous_route;

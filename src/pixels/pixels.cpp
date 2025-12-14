@@ -3,13 +3,12 @@
 #include "main.hpp"
 
 extern TFT_eSPI tft;
-extern String route;
 
-uint8_t pixel_data[24][24];
+uint8_t pixel_data[32][32];
 bool is_displaying_image = false;
 unsigned long art_display_start_time = 0;
 
-uint8_t image_history[10][24][24];
+uint8_t image_history[10][32][32];
 int history_index = 0;
 int images_in_history = 0;
 
@@ -33,9 +32,9 @@ void set_pixel_data(const char *data) {
     int data_len = strlen(data);
     Serial.print("Data length: ");
     Serial.println(data_len);
-    for (int i = 0; i < 576; ++i) {
-        int row = i / 24;
-        int col = i % 24;
+    for (int i = 0; i < 1024; ++i) {
+        int row = i / 32;
+        int col = i % 32;
         uint8_t value;
         if (i < data_len) {
             value = data[i] - '0';
@@ -54,6 +53,7 @@ void set_pixel_data(const char *data) {
 
 void start_pixel_art() {
     Serial.println("start_pixel_art called");
+    previous_route = route;
     route = "pixel";
     is_displaying_image = true;
     art_display_start_time = millis();
@@ -64,18 +64,23 @@ void pixels_loop() {
     if (!is_displaying_image) return;
 
     if (millis() - art_display_start_time > 30000) {
-        Serial.println("30 second timeout reached. Returning to menu.");
-        route = "menu";
+        Serial.println("30 second timeout reached. Returning to previous route.");
+        route = previous_route;
         is_displaying_image = false;
-        initializeMenu();
+        if (route == "pomodoro") {
+            tft.fillScreen(TFT_BLACK);
+        } else {
+            route = "menu";
+            initializeMenu();
+        }
         return;
     }
 
-    for (int y = 0; y < 24; ++y) {
-        for (int x = 0; x < 24; ++x) {
+    for (int y = 0; y < 32; ++y) {
+        for (int x = 0; x < 32; ++x) {
             uint8_t color_index = pixel_data[y][x];
             if (color_index >= 0 && color_index <= 9) {
-                tft.fillRect(x * 10, y * 10, 10, 10, color_map[color_index]);
+                tft.fillRect(8 + x * 7, 8 + y * 7, 7, 7, color_map[color_index]);
             }
         }
     }
@@ -95,11 +100,11 @@ void animate_loop() {
     static unsigned long lastAnimTime = 0;
 
     if (millis() - lastAnimTime > 100) {
-        for (int y = 0; y < 24; ++y) {
-            for (int x = 0; x < 24; ++x) {
+        for (int y = 0; y < 32; ++y) {
+            for (int x = 0; x < 32; ++x) {
                 uint8_t color_index = image_history[current_frame][y][x];
                 if (color_index >= 0 && color_index <= 9) {
-                    tft.fillRect(x * 10, y * 10, 10, 10, color_map[color_index]);
+                    tft.fillRect(8 + x * 7, 8 + y * 7, 7, 7, color_map[color_index]);
                 }
             }
         }
@@ -120,12 +125,12 @@ void process_image_part(int image_id, int part_number, const char* part_data) {
         current_image_buffer.image_id = image_id;
     }
 
-    int start_index = (part_number - 1) * (576 / 4);
+    int start_index = (part_number - 1) * (1024 / 8);
     memcpy(current_image_buffer.data + start_index, part_data, strlen(part_data));
     current_image_buffer.received_parts[part_number - 1] = true;
 
     bool all_parts_received = true;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 8; ++i) {
         if (!current_image_buffer.received_parts[i]) {
             all_parts_received = false;
             break;

@@ -5,6 +5,7 @@
 #include "config/pins.hpp"
 #include "assets/qr_codes/wifi_qr_code.hpp"
 #include "ui/menu/menu.hpp"
+#include "ui/list_menu/list_menu.hpp"
 #include "TFT_eSPI.h"
 #include "map"
 
@@ -31,6 +32,10 @@ void handleMenuDoubleClick();
 void handleMenuRelease();
 void handleClockQuit();
 void handlePixelQuit();
+void handleWifiQrQuit();
+void handleListMenuClick();
+void handleListMenuDoubleClick();
+void handleListMenuSelect();
 void doNothing();
 void registerUserActivity();
 void updateRoute(const String& route);

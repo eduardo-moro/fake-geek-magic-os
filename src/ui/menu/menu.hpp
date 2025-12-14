@@ -1,7 +1,7 @@
 #ifndef MENU_H
 #define MENU_H
 
-#include "arduino.h"
+#include <Arduino.h>
 #include "TFT_eSPI.h"
 #include "config/positions.hpp"
 #include "assets/menu/secondary_menu_bg.hpp"

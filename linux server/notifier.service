@@ -1,0 +1,15 @@
+[Unit]
+Description=MiniDisplay Notification Server
+After=network.target graphical.target
+
+[Service]
+Type=simple
+Environment="DISPLAY=:0"
+Environment="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/%U/bus"
+WorkingDirectory=%h/source/minidisplay/linux server
+ExecStart=/usr/bin/python3 "%h/source/minidisplay/linux server/notifier_server.py"
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

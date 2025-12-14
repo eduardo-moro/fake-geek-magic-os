@@ -14,8 +14,8 @@
 #include "ESP8266WebServer.h"
 #define WebServerType ESP8266WebServer
 #elif defined(ESP32)
-#include "WiFi.hpp"
-#include "WebServer.hpp"
+#include <WiFi.h>
+#include <WebServer.h>
 #define WebServerType WebServer
 #endif
 

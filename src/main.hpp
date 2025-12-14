@@ -1,8 +1,11 @@
 #pragma once
 
-#include "Arduino.h"
+#pragma once
+
+#include <Arduino.h>
 
 #include "config/pins.hpp"
+#include "config/User_Setup.h" // Include User_Setup.h here
 #include "touch_control/touch.hpp"
 #include "./web/web.hpp"
 #include "display/display.hpp"
@@ -13,6 +16,9 @@
 #include "mqtt/mqtt.hpp"
 #include "WiFiClientSecure.h"
 #include "pixels/pixels.hpp"
+
+extern String route;
+extern String previous_route;
 
 extern String route;
 extern String previous_route;

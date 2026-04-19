@@ -96,6 +96,7 @@ void setup()
   tft.init();
   tft.setRotation(0);
   tft.fillScreen(TFT_BLACK);
+  tft.setTextFont(1);
 
   EEPROM.begin(EEPROM_SIZE);
 

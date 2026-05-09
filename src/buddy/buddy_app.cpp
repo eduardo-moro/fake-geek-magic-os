@@ -21,30 +21,6 @@ enum BuddyState {
   BUDDY_ATTENTION
 };
 
-struct TerminalLine {
-  char text[120];
-  uint16_t color;
-};
-
-static const int TERM_MAX_LINES = 16;
-static TerminalLine term_lines[TERM_MAX_LINES];
-static int term_count = 0;
-static int term_head = 0;
-static bool terminal_mode = false;
-static unsigned long button_b_press_time = 0;
-static bool terminal_dirty = true;
-static bool terminal_full_redraw = true;
-static uint16_t term_next_color = TFT_WHITE;
-static bool term_font_loaded = false;
-static int term_line_height = 14;
-static char last_user_content[128] = "";
-
-// Hardware scroll constants (ST7789 vertical scroll)
-static const int TERM_TFA = 6;              // Top Fixed Area height (padding)
-static const int TERM_BFA = 6;              // Bottom Fixed Area height (padding)
-static const int TERM_VSA = 240 - TERM_TFA - TERM_BFA;  // 228px scrollable
-static int term_hw_scroll = 0;             // Current VSP offset within VSA (pixels)
-
 struct BuddyContext {
   BuddyState state;
   int total_sessions;
@@ -82,83 +58,6 @@ static void init_buddy_context() {
 static String line_buffer;
 static unsigned long deny_button_pressed_time = 0;
 static bool deny_button_already_handled = false;
-static char last_prompt_id[64] = "";  // Track to avoid duplicate terminal lines
-
-static void draw_terminal();  // Forward declaration
-
-static void term_push(const char* text) {
-  int slot;
-  if (term_count < TERM_MAX_LINES) {
-    // Simple append — only need to draw the new line
-    slot = (term_head + term_count) % TERM_MAX_LINES;
-    term_count++;
-    terminal_full_redraw = false;
-  } else {
-    // Buffer full — hardware scroll handles the visual shift, no full redraw needed
-    slot = term_head;
-    term_head = (term_head + 1) % TERM_MAX_LINES;
-  }
-
-  strncpy(term_lines[slot].text, text, sizeof(term_lines[slot].text) - 1);
-  term_lines[slot].text[sizeof(term_lines[slot].text) - 1] = '\0';
-  term_lines[slot].color = term_next_color;
-  term_next_color = TFT_WHITE;
-
-  terminal_dirty = true;
-  if (terminal_mode) {
-    draw_terminal();
-  }
-}
-
-static void term_setColor(uint16_t color) {
-  term_next_color = color;
-}
-
-static inline int term_bufIndex(int row) {
-  return (term_head + row) % TERM_MAX_LINES;
-}
-
-// Wrap text by pixel width and push each segment. Needs font loaded to measure.
-static void term_push_wrapped(const char* text, uint16_t color, const char* prefix = "") {
-  const int max_px = 238;
-  String full = prefix;
-  full += text;
-
-  int pos = 0;
-  while (pos < (int)full.length()) {
-    // Binary search: find max chars that fit within max_px
-    int lo = 1, hi = full.length() - pos;
-    if (hi <= 0) break;
-
-    // If the whole remaining string fits, push it and done
-    if (tft.textWidth(full.substring(pos)) <= max_px) {
-      term_setColor(color);
-      term_push(full.substring(pos).c_str());
-      break;
-    }
-
-    // Find last word boundary that fits
-    int fit = lo;
-    for (int mid = (lo + hi) / 2; lo < hi; mid = (lo + hi) / 2) {
-      if (tft.textWidth(full.substring(pos, pos + mid)) <= max_px) {
-        fit = mid;
-        lo = mid + 1;
-      } else {
-        hi = mid;
-      }
-    }
-
-    // Walk back to word boundary
-    int break_at = pos + fit;
-    while (break_at > pos && full[break_at] != ' ') break_at--;
-    if (break_at == pos) break_at = pos + fit;  // no space found, hard break
-
-    term_setColor(color);
-    term_push(full.substring(pos, break_at).c_str());
-    pos = break_at + 1;
-    // Continuation lines have no prefix
-  }
-}
 
 static void process_heartbeat(const JsonObject& obj) {
   buddy.total_sessions = obj["total"] | 0;
@@ -187,25 +86,10 @@ static void process_heartbeat(const JsonObject& obj) {
     strncpy(buddy.prompt_hint, ph ? ph : "", sizeof(buddy.prompt_hint) - 1);
     buddy.prompt_hint[sizeof(buddy.prompt_hint) - 1] = '\0';
     Serial.printf("[buddy] prompt: %s - %s\n", buddy.prompt_tool, buddy.prompt_hint);
-
-    // Add to terminal if new prompt
-    if (strcmp(buddy.prompt_id, last_prompt_id) != 0) {
-      String perm_line = ":: ";
-      perm_line += buddy.prompt_tool;
-      perm_line += " - ";
-      perm_line += buddy.prompt_hint;
-      term_setColor(TFT_YELLOW);
-      term_push(perm_line.c_str());
-      term_setColor(0x8410);  // Dark gray
-      term_push("[S]=approve, [N]=deny");
-      strncpy(last_prompt_id, buddy.prompt_id, sizeof(last_prompt_id) - 1);
-      last_prompt_id[sizeof(last_prompt_id) - 1] = '\0';
-    }
   } else {
     buddy.prompt_id[0] = 0;
     buddy.prompt_tool[0] = 0;
     buddy.prompt_hint[0] = 0;
-    last_prompt_id[0] = 0;
   }
 
   JsonArray entries = obj["entries"];
@@ -277,35 +161,6 @@ static void process_command(const JsonObject& obj) {
   }
 }
 
-static void process_evt(const JsonObject& obj) {
-  const char* role = obj["role"];
-  if (!role) return;
-
-  if (strcmp(role, "user") == 0) {
-    const char* content = obj["content"];
-    if (!content) return;
-
-    // Deduplicate: server sometimes re-sends the same user evt
-    if (strncmp(content, last_user_content, sizeof(last_user_content) - 1) == 0) return;
-    strncpy(last_user_content, content, sizeof(last_user_content) - 1);
-    last_user_content[sizeof(last_user_content) - 1] = '\0';
-
-    Serial.printf("[buddy] terminal: user: %s\n", content);
-    term_push_wrapped(content, TFT_CYAN, "> ");
-
-  } else if (strcmp(role, "assistant") == 0) {
-    JsonArray content = obj["content"];
-    if (content.isNull()) return;
-    for (JsonVariant item : content) {
-      const char* type_str = item["type"];
-      if (type_str && strcmp(type_str, "text") == 0) {
-        const char* text = item["text"];
-        if (text) term_push_wrapped(text, TFT_WHITE);
-      }
-    }
-  }
-}
-
 static void process_json_line(const String& line) {
   if (line.length() == 0) return;
 
@@ -319,9 +174,7 @@ static void process_json_line(const String& line) {
 
   JsonObject obj = doc.as<JsonObject>();
 
-  if (obj["evt"].as<const char*>() != nullptr) {
-    process_evt(obj);
-  } else if (obj.containsKey("cmd")) {
+  if (obj.containsKey("cmd")) {
     process_command(obj);
   } else {
     process_heartbeat(obj);
@@ -342,7 +195,6 @@ static void read_ble_lines() {
     } else if (b >= 32 && b < 127) {
       line_buffer += (char)b;
     } else if (b >= 0x80) {
-      // UTF-8 byte (part of multibyte sequence)
       line_buffer += (char)b;
     }
   }
@@ -423,97 +275,7 @@ static void draw_busy() {
   tft.drawString(buddy.entry, 20, 160);
 }
 
-// ST7789/ILI9341 vertical scroll via raw commands (TFT_eSPI exposes writecommand/writedata)
-static void term_hw_setup_scroll(uint16_t tfa, uint16_t bfa) {
-  uint16_t vsa = 240 - tfa - bfa;
-  tft.writecommand(0x33);          // VSCRDEF
-  tft.writedata(tfa >> 8); tft.writedata(tfa);
-  tft.writedata(vsa >> 8); tft.writedata(vsa);
-  tft.writedata(bfa >> 8); tft.writedata(bfa);
-}
-
-static void term_hw_scroll_to(uint16_t vsp) {
-  tft.writecommand(0x37);          // VSCRSADD
-  tft.writedata(vsp >> 8); tft.writedata(vsp);
-}
-
-static void term_load_font() {
-  if (term_font_loaded) return;
-  tft.unloadFont();
-  tft.loadFont("UTF8-Latin1-10", LittleFS);
-  tft.setTextDatum(TL_DATUM);
-  tft.setTextWrap(false);
-  tft.setTextSize(1);
-  term_line_height = tft.fontHeight() + 2;
-  // VSA must be exactly TERM_MAX_LINES * line_height so hw_scroll % VSA stays aligned
-  uint16_t vsa = TERM_MAX_LINES * term_line_height;
-  uint16_t bfa = 240 - TERM_TFA - vsa;
-  term_hw_setup_scroll(TERM_TFA, bfa);
-  term_font_loaded = true;
-}
-
-static void term_unload_font() {
-  if (!term_font_loaded) return;
-  term_hw_scroll_to(0);
-  term_hw_setup_scroll(0, 0);
-  tft.setTextWrap(true);
-  tft.unloadFont();
-  tft.loadFont("UTF8-Latin1-16", LittleFS);
-  term_font_loaded = false;
-}
-
-// Draw a single line at physical RAM row 'write_y', with background clear
-static void term_draw_line(int write_y, int idx) {
-  tft.fillRect(0, write_y, 240, term_line_height, TFT_BLACK);
-  tft.setTextColor(term_lines[idx].color, TFT_BLACK);
-  tft.drawString(term_lines[idx].text, 0, write_y);
-}
-
-static void draw_terminal() {
-  if (!terminal_dirty) return;
-
-  term_load_font();
-
-  // VSA must match what was set in term_load_font: exactly TERM_MAX_LINES * line_height
-  const int term_vsa = TERM_MAX_LINES * term_line_height;
-
-  if (terminal_full_redraw) {
-    tft.fillScreen(TFT_BLACK);
-    term_hw_scroll_to(TERM_TFA);
-    term_hw_scroll = 0;
-    for (int row = 0; row < term_count; row++) {
-      term_draw_line(TERM_TFA + row * term_line_height, term_bufIndex(row));
-    }
-    terminal_full_redraw = false;
-
-  } else if (term_count <= TERM_MAX_LINES) {
-    // Fill phase: append new line at bottom, no scroll
-    int row = term_count - 1;
-    term_draw_line(TERM_TFA + row * term_line_height, term_bufIndex(row));
-    // Clear next row (erases old status indicator)
-    if (row + 1 < TERM_MAX_LINES)
-      tft.fillRect(0, TERM_TFA + (row + 1) * term_line_height, 240, term_line_height, TFT_BLACK);
-
-  } else {
-    // Scroll phase: overwrite the row that just left the visible top, then scroll
-    int write_y = TERM_TFA + term_hw_scroll;
-    term_draw_line(write_y, term_bufIndex(term_count - 1));
-    term_hw_scroll = (term_hw_scroll + term_line_height) % term_vsa;
-    term_hw_scroll_to(TERM_TFA + term_hw_scroll);
-  }
-
-  // Status indicator when not full
-  if (buddy.running_sessions > 0 && term_count < TERM_MAX_LINES) {
-    int y = TERM_TFA + term_count * term_line_height;
-    tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.drawString("[thinking...]", 0, y);
-  }
-
-  terminal_dirty = false;
-}
-
 static void draw_centered_text(const char* text, int y, int max_width_chars, int line_spacing) {
-  // Draw text with word wrap, centered
   String full_text = text;
   int pos = 0;
   int line_y = y;
@@ -522,26 +284,16 @@ static void draw_centered_text(const char* text, int y, int max_width_chars, int
     int line_end = pos + max_width_chars;
 
     if (line_end >= (int)full_text.length()) {
-      // Last line
-      String line = full_text.substring(pos);
-      tft.drawString(line.c_str(), 120, line_y);
+      tft.drawString(full_text.substring(pos).c_str(), 120, line_y);
       break;
     } else {
-      // Find last space before line_end to break at word boundary
       int space_pos = line_end;
-      while (space_pos > pos && full_text[space_pos] != ' ') {
-        space_pos--;
-      }
+      while (space_pos > pos && full_text[space_pos] != ' ') space_pos--;
+      if (space_pos == pos) space_pos = line_end;
 
-      if (space_pos == pos) {
-        // No space found, break at max_width
-        space_pos = line_end;
-      }
-
-      String line = full_text.substring(pos, space_pos);
-      tft.drawString(line.c_str(), 120, line_y);
+      tft.drawString(full_text.substring(pos, space_pos).c_str(), 120, line_y);
       line_y += line_spacing;
-      pos = space_pos + 1;  // Skip the space
+      pos = space_pos + 1;
     }
   }
 }
@@ -574,11 +326,9 @@ static void draw_attention() {
   tft.setTextSize(1);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
 
-  // Use 10pt font for hint text to fit more
   tft.unloadFont();
   tft.loadFont("UTF8-Latin1-10", LittleFS);
   draw_centered_text(buddy.prompt_hint, 110, 36, 10);
-  // Reload 16pt for the rest
   tft.unloadFont();
   tft.loadFont("UTF8-Latin1-16", LittleFS);
 
@@ -607,24 +357,11 @@ static void update_display() {
     return;
   }
 
-  if (terminal_mode) {
-    draw_terminal();
-    return;
-  }
-
   switch (buddy.state) {
-    case BUDDY_DISCONNECTED:
-      draw_disconnected();
-      break;
-    case BUDDY_IDLE:
-      draw_idle();
-      break;
-    case BUDDY_BUSY:
-      draw_busy();
-      break;
-    case BUDDY_ATTENTION:
-      draw_attention();
-      break;
+    case BUDDY_DISCONNECTED: draw_disconnected(); break;
+    case BUDDY_IDLE:         draw_idle();         break;
+    case BUDDY_BUSY:         draw_busy();         break;
+    case BUDDY_ATTENTION:    draw_attention();    break;
   }
 }
 
@@ -646,7 +383,6 @@ static void send_permission(const char* decision) {
 }
 
 void buddy_app_send_approve() {
-  // Button A (cap-touch pin 32) → approve permission prompt
   if (buddy.prompt_pending && buddy.prompt_id[0] != '\0') {
     Serial.println("[buddy] button A: sending approve");
     send_permission("once");
@@ -654,7 +390,6 @@ void buddy_app_send_approve() {
 }
 
 void buddy_app_send_deny() {
-  // Button B (physical push pin 0) → deny permission prompt
   if (buddy.prompt_pending && buddy.prompt_id[0] != '\0') {
     Serial.println("[buddy] button B: sending deny");
     send_permission("deny");
@@ -666,7 +401,6 @@ void buddy_app_start() {
   init_buddy_context();
   line_buffer = "";
 
-  // Load UTF-8 capable font from LittleFS (with Latin-1 accents: ç, á, é, í, ó, ú, ã, õ)
   if (LittleFS.begin()) {
     tft.loadFont("UTF8-Latin1-16", LittleFS);
     font_loaded = true;
@@ -684,7 +418,7 @@ void buddy_app_start() {
 }
 
 void buddy_app_loop() {
-  read_ble_lines();  // Process incoming heartbeats and update buddy state
+  read_ble_lines();
 
   static uint32_t last_passkey = 0;
   uint32_t current_passkey = blePasskey();
@@ -698,7 +432,6 @@ void buddy_app_loop() {
 
   BuddyState prev_state = buddy.state;
 
-  // Update state based on current conditions
   if (!is_connected) {
     buddy.state = BUDDY_DISCONNECTED;
     buddy.total_sessions = 0;
@@ -725,30 +458,13 @@ void buddy_app_loop() {
     if (deny_button_pressed_time == 0) {
       deny_button_pressed_time = millis();
       deny_button_already_handled = false;
-    }
-  } else {
-    // Button released
-    if (deny_button_pressed_time > 0 && !deny_button_already_handled) {
-      unsigned long press_duration = millis() - deny_button_pressed_time;
-      if (press_duration >= 500) {
-        // Long press: toggle terminal mode
-        terminal_mode = !terminal_mode;
-        terminal_dirty = true;
-        terminal_full_redraw = true;
-        if (terminal_mode) {
-          term_load_font();
-        } else {
-          term_unload_font();
-        }
-        Serial.printf("[buddy] button B: toggle terminal mode = %d\n", terminal_mode);
-        update_display();
-      } else {
-        // Short press: send deny if prompt pending
-        buddy_app_send_deny();
-      }
+    } else if (!deny_button_already_handled && millis() - deny_button_pressed_time > 100) {
+      buddy_app_send_deny();
       deny_button_already_handled = true;
     }
+  } else {
     deny_button_pressed_time = 0;
+    deny_button_already_handled = false;
   }
 #endif
 

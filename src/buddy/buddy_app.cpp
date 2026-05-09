@@ -21,6 +21,25 @@ enum BuddyState {
   BUDDY_ATTENTION
 };
 
+enum TerminalLineType {
+  LINE_USER,
+  LINE_CLAUDE,
+  LINE_PERMISSION,
+  LINE_SYSTEM
+};
+
+struct TerminalLine {
+  char text[120];
+  TerminalLineType type;
+};
+
+static const int TERM_MAX_LINES = 40;
+static TerminalLine term_lines[TERM_MAX_LINES];
+static int term_count = 0;
+static int term_scroll = 0;
+static bool terminal_mode = false;
+static unsigned long button_b_press_time = 0;
+
 struct BuddyContext {
   BuddyState state;
   int total_sessions;
@@ -58,6 +77,29 @@ static void init_buddy_context() {
 static String line_buffer;
 static unsigned long deny_button_pressed_time = 0;
 static bool deny_button_already_handled = false;
+static char last_prompt_id[64] = "";  // Track to avoid duplicate terminal lines
+
+static void term_push(const char* text, TerminalLineType type) {
+  if (term_count < TERM_MAX_LINES) {
+    strncpy(term_lines[term_count].text, text, sizeof(term_lines[term_count].text) - 1);
+    term_lines[term_count].text[sizeof(term_lines[term_count].text) - 1] = '\0';
+    term_lines[term_count].type = type;
+    term_count++;
+  } else {
+    // Shift all lines up and add new one at the end
+    for (int i = 0; i < TERM_MAX_LINES - 1; i++) {
+      term_lines[i] = term_lines[i + 1];
+    }
+    strncpy(term_lines[TERM_MAX_LINES - 1].text, text, sizeof(term_lines[0].text) - 1);
+    term_lines[TERM_MAX_LINES - 1].text[sizeof(term_lines[0].text) - 1] = '\0';
+    term_lines[TERM_MAX_LINES - 1].type = type;
+  }
+  // Auto-scroll to show latest lines
+  const int visible_lines = 17;  // 240px / ~13px per line (10pt font)
+  if (term_count > visible_lines) {
+    term_scroll = term_count - visible_lines;
+  }
+}
 
 static void process_heartbeat(const JsonObject& obj) {
   buddy.total_sessions = obj["total"] | 0;
@@ -86,10 +128,23 @@ static void process_heartbeat(const JsonObject& obj) {
     strncpy(buddy.prompt_hint, ph ? ph : "", sizeof(buddy.prompt_hint) - 1);
     buddy.prompt_hint[sizeof(buddy.prompt_hint) - 1] = '\0';
     Serial.printf("[buddy] prompt: %s - %s\n", buddy.prompt_tool, buddy.prompt_hint);
+
+    // Add to terminal if new prompt
+    if (strcmp(buddy.prompt_id, last_prompt_id) != 0) {
+      String perm_line = ":: ";
+      perm_line += buddy.prompt_tool;
+      perm_line += " - ";
+      perm_line += buddy.prompt_hint;
+      term_push(perm_line.c_str(), LINE_PERMISSION);
+      term_push("[S]=approve, [N]=deny", LINE_SYSTEM);
+      strncpy(last_prompt_id, buddy.prompt_id, sizeof(last_prompt_id) - 1);
+      last_prompt_id[sizeof(last_prompt_id) - 1] = '\0';
+    }
   } else {
     buddy.prompt_id[0] = 0;
     buddy.prompt_tool[0] = 0;
     buddy.prompt_hint[0] = 0;
+    last_prompt_id[0] = 0;
   }
 
   JsonArray entries = obj["entries"];
@@ -161,6 +216,57 @@ static void process_command(const JsonObject& obj) {
   }
 }
 
+static void process_evt(const JsonObject& obj) {
+  const char* role = obj["role"];
+  if (!role) return;
+
+  if (strcmp(role, "user") == 0) {
+    const char* content = obj["content"];
+    if (content) {
+      String display_text = "> ";
+      display_text += content;
+      term_push(display_text.c_str(), LINE_USER);
+      Serial.printf("[buddy] terminal: user: %s\n", content);
+    }
+  } else if (strcmp(role, "assistant") == 0) {
+    JsonArray content = obj["content"];
+    if (!content.isNull()) {
+      for (JsonVariant item : content) {
+        const char* type_str = item["type"];
+        if (type_str && strcmp(type_str, "text") == 0) {
+          const char* text = item["text"];
+          if (text) {
+            // Split long text into multiple lines if needed
+            String full_text = text;
+            int pos = 0;
+            const int max_len = 36;  // chars per line at 10pt font
+
+            while (pos < (int)full_text.length()) {
+              int end = pos + max_len;
+              if (end >= (int)full_text.length()) {
+                String line = full_text.substring(pos);
+                term_push(line.c_str(), LINE_CLAUDE);
+                break;
+              } else {
+                // Find last space before end
+                int space_pos = end;
+                while (space_pos > pos && full_text[space_pos] != ' ') {
+                  space_pos--;
+                }
+                if (space_pos == pos) space_pos = end;
+
+                String line = full_text.substring(pos, space_pos);
+                term_push(line.c_str(), LINE_CLAUDE);
+                pos = space_pos + 1;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 static void process_json_line(const String& line) {
   if (line.length() == 0) return;
 
@@ -174,7 +280,9 @@ static void process_json_line(const String& line) {
 
   JsonObject obj = doc.as<JsonObject>();
 
-  if (obj.containsKey("cmd")) {
+  if (obj["evt"].as<const char*>() != nullptr) {
+    process_evt(obj);
+  } else if (obj.containsKey("cmd")) {
     process_command(obj);
   } else {
     process_heartbeat(obj);
@@ -276,6 +384,49 @@ static void draw_busy() {
   tft.drawString(buddy.entry, 20, 160);
 }
 
+static void draw_terminal() {
+  tft.fillScreen(TFT_BLACK);
+
+  // Load 10pt font for terminal
+  tft.unloadFont();
+  tft.loadFont("UTF8-Latin1-10", LittleFS);
+
+  tft.setTextDatum(TL_DATUM);
+  tft.setTextSize(1);
+
+  const int visible_lines = 17;
+  const int line_height = 13;
+  int y = 5;
+
+  // Draw visible lines
+  for (int i = 0; i < visible_lines && (term_scroll + i) < term_count; i++) {
+    const TerminalLine& tline = term_lines[term_scroll + i];
+
+    switch (tline.type) {
+      case LINE_USER:
+        tft.setTextColor(TFT_CYAN, TFT_BLACK);
+        break;
+      case LINE_CLAUDE:
+        tft.setTextColor(TFT_WHITE, TFT_BLACK);
+        break;
+      case LINE_PERMISSION:
+        tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+        break;
+      case LINE_SYSTEM:
+        tft.setTextColor(0x8410, TFT_BLACK);  // Dark gray
+        break;
+    }
+
+    tft.setCursor(5, y);
+    tft.print(tline.text);
+    y += line_height;
+  }
+
+  // Reload 16pt font
+  tft.unloadFont();
+  tft.loadFont("UTF8-Latin1-16", LittleFS);
+}
+
 static void draw_centered_text(const char* text, int y, int max_width_chars, int line_spacing) {
   // Draw text with word wrap, centered
   String full_text = text;
@@ -368,6 +519,11 @@ static void update_display() {
   uint32_t pk = blePasskey();
   if (pk > 0) {
     draw_pairing();
+    return;
+  }
+
+  if (terminal_mode) {
+    draw_terminal();
     return;
   }
 
@@ -484,13 +640,23 @@ void buddy_app_loop() {
     if (deny_button_pressed_time == 0) {
       deny_button_pressed_time = millis();
       deny_button_already_handled = false;
-    } else if (!deny_button_already_handled && millis() - deny_button_pressed_time > 100) {
-      buddy_app_send_deny();
-      deny_button_already_handled = true;
     }
   } else {
+    // Button released
+    if (deny_button_pressed_time > 0 && !deny_button_already_handled) {
+      unsigned long press_duration = millis() - deny_button_pressed_time;
+      if (press_duration >= 500) {
+        // Long press: toggle terminal mode
+        terminal_mode = !terminal_mode;
+        Serial.printf("[buddy] button B: toggle terminal mode = %d\n", terminal_mode);
+        update_display();
+      } else {
+        // Short press: send deny if prompt pending
+        buddy_app_send_deny();
+      }
+      deny_button_already_handled = true;
+    }
     deny_button_pressed_time = 0;
-    deny_button_already_handled = false;
   }
 #endif
 

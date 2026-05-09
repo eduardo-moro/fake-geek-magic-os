@@ -105,8 +105,6 @@ static void process_command(const JsonObject& obj) {
   const char* cmd = obj["cmd"];
   if (!cmd) return;
 
-  Serial.printf("[buddy] cmd: %s\n", cmd);
-
   if (strcmp(cmd, "status") == 0) {
     StaticJsonDocument<512> response;
     response["ack"] = "status";
@@ -138,8 +136,7 @@ static void process_command(const JsonObject& obj) {
     String json_str;
     serializeJson(response, json_str);
     json_str += "\n";
-    size_t written = bleWrite((const uint8_t*)json_str.c_str(), json_str.length());
-    Serial.printf("[buddy] status ack sent (%d bytes)\n", written);
+    bleWrite((const uint8_t*)json_str.c_str(), json_str.length());
   } else if (strcmp(cmd, "owner") == 0 || strcmp(cmd, "name") == 0) {
     StaticJsonDocument<64> response;
     response["ack"] = cmd;
@@ -147,8 +144,7 @@ static void process_command(const JsonObject& obj) {
     String json_str;
     serializeJson(response, json_str);
     json_str += "\n";
-    size_t written = bleWrite((const uint8_t*)json_str.c_str(), json_str.length());
-    Serial.printf("[buddy] %s ack sent (%d bytes)\n", cmd, written);
+    bleWrite((const uint8_t*)json_str.c_str(), json_str.length());
   } else if (strcmp(cmd, "unpair") == 0) {
     bleClearBonds();
     StaticJsonDocument<64> response;
@@ -435,9 +431,7 @@ void buddy_app_loop() {
     String json_str;
     serializeJson(doc, json_str);
     json_str += "\n";
-    size_t written = bleWrite((const uint8_t*)json_str.c_str(), json_str.length());
-    if (written > 0) {
-      Serial.printf("[buddy] status request sent (%d bytes)\n", written);
+    if (bleWrite((const uint8_t*)json_str.c_str(), json_str.length()) > 0) {
       last_status_request = now;
     }
   }

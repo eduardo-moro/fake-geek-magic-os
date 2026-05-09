@@ -26,14 +26,18 @@ struct TerminalLine {
   uint16_t color;
 };
 
-static const int TERM_MAX_LINES = 16;  // 240px screen: (240 - 12 padding) / 14px per line = ~16 lines
+static const int TERM_MAX_LINES = 16;
 static TerminalLine term_lines[TERM_MAX_LINES];
 static int term_count = 0;
-static int term_head = 0;  // Circular buffer head
+static int term_head = 0;
 static bool terminal_mode = false;
 static unsigned long button_b_press_time = 0;
-static bool terminal_dirty = true;  // Redraw when true
-static uint16_t term_next_color = TFT_WHITE;  // Color for next println
+static bool terminal_dirty = true;
+static bool terminal_full_redraw = true;   // When true: redraw all lines; false: only last line
+static uint16_t term_next_color = TFT_WHITE;
+static bool term_font_loaded = false;      // Font stays loaded while in terminal_mode
+static int term_line_height = 14;          // Set after font is measured
+static char last_user_content[128] = "";   // Deduplicate repeated user evt messages
 
 struct BuddyContext {
   BuddyState state;
@@ -79,17 +83,21 @@ static void draw_terminal();  // Forward declaration
 static void term_push(const char* text) {
   int slot;
   if (term_count < TERM_MAX_LINES) {
+    // Simple append — only need to draw the new line
     slot = (term_head + term_count) % TERM_MAX_LINES;
     term_count++;
+    terminal_full_redraw = false;
   } else {
+    // Scroll — head advances, all rows shift up visually → full redraw needed
     slot = term_head;
     term_head = (term_head + 1) % TERM_MAX_LINES;
+    terminal_full_redraw = true;
   }
 
   strncpy(term_lines[slot].text, text, sizeof(term_lines[slot].text) - 1);
   term_lines[slot].text[sizeof(term_lines[slot].text) - 1] = '\0';
   term_lines[slot].color = term_next_color;
-  term_next_color = TFT_WHITE;  // Reset color after each line
+  term_next_color = TFT_WHITE;
 
   terminal_dirty = true;
   if (terminal_mode) {
@@ -103,6 +111,48 @@ static void term_setColor(uint16_t color) {
 
 static inline int term_bufIndex(int row) {
   return (term_head + row) % TERM_MAX_LINES;
+}
+
+// Wrap text by pixel width and push each segment. Needs font loaded to measure.
+static void term_push_wrapped(const char* text, uint16_t color, const char* prefix = "") {
+  const int max_px = 238;
+  String full = prefix;
+  full += text;
+
+  int pos = 0;
+  while (pos < (int)full.length()) {
+    // Binary search: find max chars that fit within max_px
+    int lo = 1, hi = full.length() - pos;
+    if (hi <= 0) break;
+
+    // If the whole remaining string fits, push it and done
+    if (tft.textWidth(full.substring(pos)) <= max_px) {
+      term_setColor(color);
+      term_push(full.substring(pos).c_str());
+      break;
+    }
+
+    // Find last word boundary that fits
+    int fit = lo;
+    for (int mid = (lo + hi) / 2; lo < hi; mid = (lo + hi) / 2) {
+      if (tft.textWidth(full.substring(pos, pos + mid)) <= max_px) {
+        fit = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+
+    // Walk back to word boundary
+    int break_at = pos + fit;
+    while (break_at > pos && full[break_at] != ' ') break_at--;
+    if (break_at == pos) break_at = pos + fit;  // no space found, hard break
+
+    term_setColor(color);
+    term_push(full.substring(pos, break_at).c_str());
+    pos = break_at + 1;
+    // Continuation lines have no prefix
+  }
 }
 
 static void process_heartbeat(const JsonObject& obj) {
@@ -228,49 +278,24 @@ static void process_evt(const JsonObject& obj) {
 
   if (strcmp(role, "user") == 0) {
     const char* content = obj["content"];
-    if (content) {
-      String display_text = "> ";
-      display_text += content;
-      term_setColor(TFT_CYAN);
-      term_push(display_text.c_str());
-      Serial.printf("[buddy] terminal: user: %s\n", content);
-    }
+    if (!content) return;
+
+    // Deduplicate: server sometimes re-sends the same user evt
+    if (strncmp(content, last_user_content, sizeof(last_user_content) - 1) == 0) return;
+    strncpy(last_user_content, content, sizeof(last_user_content) - 1);
+    last_user_content[sizeof(last_user_content) - 1] = '\0';
+
+    Serial.printf("[buddy] terminal: user: %s\n", content);
+    term_push_wrapped(content, TFT_CYAN, "> ");
+
   } else if (strcmp(role, "assistant") == 0) {
     JsonArray content = obj["content"];
-    if (!content.isNull()) {
-      for (JsonVariant item : content) {
-        const char* type_str = item["type"];
-        if (type_str && strcmp(type_str, "text") == 0) {
-          const char* text = item["text"];
-          if (text) {
-            // Split long text into multiple lines if needed
-            String full_text = text;
-            int pos = 0;
-            const int max_len = 36;  // chars per line at 10pt font
-
-            while (pos < (int)full_text.length()) {
-              int end = pos + max_len;
-              if (end >= (int)full_text.length()) {
-                String line = full_text.substring(pos);
-                term_setColor(TFT_WHITE);
-                term_push(line.c_str());
-                break;
-              } else {
-                // Find last space before end
-                int space_pos = end;
-                while (space_pos > pos && full_text[space_pos] != ' ') {
-                  space_pos--;
-                }
-                if (space_pos == pos) space_pos = end;
-
-                String line = full_text.substring(pos, space_pos);
-                term_setColor(TFT_WHITE);
-                term_push(line.c_str());
-                pos = space_pos + 1;
-              }
-            }
-          }
-        }
+    if (content.isNull()) return;
+    for (JsonVariant item : content) {
+      const char* type_str = item["type"];
+      if (type_str && strcmp(type_str, "text") == 0) {
+        const char* text = item["text"];
+        if (text) term_push_wrapped(text, TFT_WHITE);
       }
     }
   }
@@ -393,55 +418,66 @@ static void draw_busy() {
   tft.drawString(buddy.entry, 20, 160);
 }
 
+static void term_load_font() {
+  if (term_font_loaded) return;
+  tft.unloadFont();
+  tft.loadFont("UTF8-Latin1-10", LittleFS);
+  tft.setTextDatum(TL_DATUM);
+  tft.setTextWrap(false);
+  tft.setTextSize(1);
+  term_line_height = tft.fontHeight() + 2;
+  term_font_loaded = true;
+}
+
+static void term_unload_font() {
+  if (!term_font_loaded) return;
+  tft.setTextWrap(true);
+  tft.unloadFont();
+  tft.loadFont("UTF8-Latin1-16", LittleFS);
+  term_font_loaded = false;
+}
+
 static void draw_terminal() {
   if (!terminal_dirty) return;
 
-  // Load 10pt font for terminal
-  tft.unloadFont();
-  tft.loadFont("UTF8-Latin1-10", LittleFS);
+  term_load_font();
 
-  tft.setTextDatum(TL_DATUM);
-  tft.setTextWrap(false);  // Prevent TFT from auto-wrapping (would advance Y unexpectedly)
-  tft.setTextSize(1);
-
-  // Measure actual font height so rows never overlap
-  const int line_height = tft.fontHeight() + 2;  // +2px leading
   const int padding_top = 6;
-  const int max_visible_lines = (240 - padding_top - 6) / line_height;
+  const int max_visible_lines = (240 - padding_top - 6) / term_line_height;
 
-  // Draw all lines in circular buffer using drawString (TL_DATUM: y = top of glyph, not baseline)
-  for (int row = 0; row < term_count; row++) {
+  if (terminal_full_redraw) {
+    // Full redraw: clear screen and redraw all lines
+    tft.fillScreen(TFT_BLACK);
+    for (int row = 0; row < term_count; row++) {
+      int idx = term_bufIndex(row);
+      int y = padding_top + row * term_line_height;
+      tft.setTextColor(term_lines[idx].color, TFT_BLACK);
+      tft.drawString(term_lines[idx].text, 0, y);
+    }
+    terminal_full_redraw = false;
+  } else {
+    // Incremental: only draw the last line (new append, no scroll)
+    int row = term_count - 1;
     int idx = term_bufIndex(row);
-    const TerminalLine& tline = term_lines[idx];
-    int y = padding_top + row * line_height;
+    int y = padding_top + row * term_line_height;
+    tft.fillRect(0, y, 240, term_line_height, TFT_BLACK);
+    tft.setTextColor(term_lines[idx].color, TFT_BLACK);
+    tft.drawString(term_lines[idx].text, 0, y);
 
-    // Fill row background first to erase any previous content at this y
-    tft.fillRect(0, y, 240, line_height, TFT_BLACK);
-    tft.setTextColor(tline.color, TFT_BLACK);
-    tft.drawString(tline.text, 0, y);
+    // Erase status line row (next row after content)
+    if (row + 1 < max_visible_lines) {
+      tft.fillRect(0, padding_top + (row + 1) * term_line_height, 240, term_line_height, TFT_BLACK);
+    }
   }
 
-  // Erase rows below content
-  for (int row = term_count; row < max_visible_lines; row++) {
-    int y = padding_top + row * line_height;
-    tft.fillRect(0, y, 240, line_height, TFT_BLACK);
-  }
-
-  // Draw status indicator if Claude is processing
+  // Draw status indicator at next row if there's room
   if (buddy.running_sessions > 0 && term_count < max_visible_lines) {
-    int y = padding_top + term_count * line_height;
-    tft.fillRect(0, y, 240, line_height, TFT_BLACK);
+    int y = padding_top + term_count * term_line_height;
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.drawString("[Claude thinking...]", 0, y);
+    tft.drawString("[thinking...]", 0, y);
   }
 
   terminal_dirty = false;
-
-  tft.setTextWrap(true);  // Restore wrap for other parts of the UI
-
-  // Reload 16pt font
-  tft.unloadFont();
-  tft.loadFont("UTF8-Latin1-16", LittleFS);
 }
 
 static void draw_centered_text(const char* text, int y, int max_width_chars, int line_spacing) {
@@ -665,7 +701,13 @@ void buddy_app_loop() {
       if (press_duration >= 500) {
         // Long press: toggle terminal mode
         terminal_mode = !terminal_mode;
-        terminal_dirty = true;  // Force redraw on toggle
+        terminal_dirty = true;
+        terminal_full_redraw = true;
+        if (terminal_mode) {
+          term_load_font();
+        } else {
+          term_unload_font();
+        }
         Serial.printf("[buddy] button B: toggle terminal mode = %d\n", terminal_mode);
         update_display();
       } else {

@@ -33,11 +33,17 @@ static int term_head = 0;
 static bool terminal_mode = false;
 static unsigned long button_b_press_time = 0;
 static bool terminal_dirty = true;
-static bool terminal_full_redraw = true;   // When true: redraw all lines; false: only last line
+static bool terminal_full_redraw = true;
 static uint16_t term_next_color = TFT_WHITE;
-static bool term_font_loaded = false;      // Font stays loaded while in terminal_mode
-static int term_line_height = 14;          // Set after font is measured
-static char last_user_content[128] = "";   // Deduplicate repeated user evt messages
+static bool term_font_loaded = false;
+static int term_line_height = 14;
+static char last_user_content[128] = "";
+
+// Hardware scroll constants (ST7789 vertical scroll)
+static const int TERM_TFA = 6;              // Top Fixed Area height (padding)
+static const int TERM_BFA = 6;              // Bottom Fixed Area height (padding)
+static const int TERM_VSA = 240 - TERM_TFA - TERM_BFA;  // 228px scrollable
+static int term_hw_scroll = 0;             // Current VSP offset within VSA (pixels)
 
 struct BuddyContext {
   BuddyState state;
@@ -418,6 +424,20 @@ static void draw_busy() {
   tft.drawString(buddy.entry, 20, 160);
 }
 
+// ST7789/ILI9341 vertical scroll via raw commands (TFT_eSPI exposes writecommand/writedata)
+static void term_hw_setup_scroll(uint16_t tfa, uint16_t bfa) {
+  uint16_t vsa = 240 - tfa - bfa;
+  tft.writecommand(0x33);          // VSCRDEF
+  tft.writedata(tfa >> 8); tft.writedata(tfa);
+  tft.writedata(vsa >> 8); tft.writedata(vsa);
+  tft.writedata(bfa >> 8); tft.writedata(bfa);
+}
+
+static void term_hw_scroll_to(uint16_t vsp) {
+  tft.writecommand(0x37);          // VSCRSADD
+  tft.writedata(vsp >> 8); tft.writedata(vsp);
+}
+
 static void term_load_font() {
   if (term_font_loaded) return;
   tft.unloadFont();
@@ -426,15 +446,25 @@ static void term_load_font() {
   tft.setTextWrap(false);
   tft.setTextSize(1);
   term_line_height = tft.fontHeight() + 2;
+  term_hw_setup_scroll(TERM_TFA, TERM_BFA);
   term_font_loaded = true;
 }
 
 static void term_unload_font() {
   if (!term_font_loaded) return;
+  term_hw_scroll_to(0);
+  term_hw_setup_scroll(0, 0);
   tft.setTextWrap(true);
   tft.unloadFont();
   tft.loadFont("UTF8-Latin1-16", LittleFS);
   term_font_loaded = false;
+}
+
+// Draw a single line at physical RAM row 'write_y', with background clear
+static void term_draw_line(int write_y, int idx) {
+  tft.fillRect(0, write_y, 240, term_line_height, TFT_BLACK);
+  tft.setTextColor(term_lines[idx].color, TFT_BLACK);
+  tft.drawString(term_lines[idx].text, 0, write_y);
 }
 
 static void draw_terminal() {
@@ -442,37 +472,38 @@ static void draw_terminal() {
 
   term_load_font();
 
-  const int padding_top = 6;
-  const int max_visible_lines = (240 - padding_top - 6) / term_line_height;
+  const int max_visible = TERM_VSA / term_line_height;
 
   if (terminal_full_redraw) {
-    // Full redraw: clear screen and redraw all lines
+    // Full redraw: clear, reset hw scroll, draw all buffered lines from top
     tft.fillScreen(TFT_BLACK);
+    term_hw_scroll_to(TERM_TFA);
+    term_hw_scroll = 0;
     for (int row = 0; row < term_count; row++) {
-      int idx = term_bufIndex(row);
-      int y = padding_top + row * term_line_height;
-      tft.setTextColor(term_lines[idx].color, TFT_BLACK);
-      tft.drawString(term_lines[idx].text, 0, y);
+      term_draw_line(TERM_TFA + row * term_line_height, term_bufIndex(row));
     }
     terminal_full_redraw = false;
-  } else {
-    // Incremental: only draw the last line (new append, no scroll)
-    int row = term_count - 1;
-    int idx = term_bufIndex(row);
-    int y = padding_top + row * term_line_height;
-    tft.fillRect(0, y, 240, term_line_height, TFT_BLACK);
-    tft.setTextColor(term_lines[idx].color, TFT_BLACK);
-    tft.drawString(term_lines[idx].text, 0, y);
 
-    // Erase status line row (next row after content)
-    if (row + 1 < max_visible_lines) {
-      tft.fillRect(0, padding_top + (row + 1) * term_line_height, 240, term_line_height, TFT_BLACK);
-    }
+  } else if (term_count <= max_visible) {
+    // Fill phase: buffer not yet full, just append new line — no hw scroll
+    int row = term_count - 1;
+    term_draw_line(TERM_TFA + row * term_line_height, term_bufIndex(row));
+    // Clear next row (erases old status indicator)
+    tft.fillRect(0, TERM_TFA + term_count * term_line_height, 240, term_line_height, TFT_BLACK);
+
+  } else {
+    // Scroll phase: write new line at physical y = TERM_TFA + term_hw_scroll
+    // (that row just scrolled off the visible top — safe to overwrite)
+    int write_y = TERM_TFA + term_hw_scroll;
+    term_draw_line(write_y, term_bufIndex(term_count - 1));
+    // Advance scroll offset and issue hardware scroll command
+    term_hw_scroll = (term_hw_scroll + term_line_height) % TERM_VSA;
+    term_hw_scroll_to(TERM_TFA + term_hw_scroll);
   }
 
-  // Draw status indicator at next row if there's room
-  if (buddy.running_sessions > 0 && term_count < max_visible_lines) {
-    int y = padding_top + term_count * term_line_height;
+  // Status indicator: show in the row after content if there is room
+  if (buddy.running_sessions > 0 && term_count < max_visible) {
+    int y = TERM_TFA + term_count * term_line_height;
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
     tft.drawString("[thinking...]", 0, y);
   }

@@ -276,7 +276,7 @@ static void draw_busy() {
   tft.drawString(buddy.entry, 20, 160);
 }
 
-static void draw_centered_text(const char* text, int y, int max_width_chars) {
+static void draw_centered_text(const char* text, int y, int max_width_chars, int line_spacing) {
   // Draw text with word wrap, centered
   String full_text = text;
   int pos = 0;
@@ -304,7 +304,7 @@ static void draw_centered_text(const char* text, int y, int max_width_chars) {
 
       String line = full_text.substring(pos, space_pos);
       tft.drawString(line.c_str(), 120, line_y);
-      line_y += 12;  // Line spacing
+      line_y += line_spacing;
       pos = space_pos + 1;  // Skip the space
     }
   }
@@ -338,13 +338,13 @@ static void draw_attention() {
   tft.setTextSize(1);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
 
-  if (font_loaded) {
-    // With smaller font, allow more chars per line
-    draw_centered_text(buddy.prompt_hint, 105, 32);
-  } else {
-    // With default font, fewer chars per line
-    draw_centered_text(buddy.prompt_hint, 160, 25);
-  }
+  // Use 10pt font for hint text to fit more
+  tft.unloadFont();
+  tft.loadFont("UTF8-Latin1-10", LittleFS);
+  draw_centered_text(buddy.prompt_hint, 110, 36, 10);
+  // Reload 16pt for the rest
+  tft.unloadFont();
+  tft.loadFont("UTF8-Latin1-16", LittleFS);
 
   tft.setTextDatum(MC_DATUM);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
@@ -429,7 +429,7 @@ void buddy_app_start() {
   if (LittleFS.begin()) {
     tft.loadFont("UTF8-Latin1-16", LittleFS);
     font_loaded = true;
-    Serial.println("[buddy] UTF-8 font loaded");
+    Serial.println("[buddy] UTF-8 16pt font loaded");
   } else {
     Serial.println("[buddy] LittleFS failed");
   }

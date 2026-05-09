@@ -400,11 +400,11 @@ void buddy_app_start() {
   init_buddy_context();
   line_buffer = "";
 
-  // Load UTF-8 capable font from LittleFS
+  // Load UTF-8 capable font from LittleFS (with Latin-1 accents: ç, á, é, í, ó, ú, ã, õ)
   if (LittleFS.begin()) {
-    tft.loadFont("NerdFontSubset-16", LittleFS);
+    tft.loadFont("UTF8-Latin1-16", LittleFS);
     font_loaded = true;
-    Serial.println("[buddy] font loaded");
+    Serial.println("[buddy] UTF-8 font loaded");
   } else {
     Serial.println("[buddy] LittleFS failed");
   }

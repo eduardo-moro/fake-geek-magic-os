@@ -300,7 +300,7 @@ static void draw_attention() {
     tft.drawString(buddy.prompt_tool, 120, 120);
   }
 
-  tft.setTextDatum(TL_DATUM);
+  tft.setTextDatum(MC_DATUM);
 
   char hint_display[100];
   strncpy(hint_display, buddy.prompt_hint, sizeof(hint_display) - 1);
@@ -315,10 +315,10 @@ static void draw_attention() {
 
   if (font_loaded) {
     tft.setTextSize(1);
-    tft.drawString(hint_display, 10, 100);
+    tft.drawString(hint_display, 120, 110);
   } else {
     tft.setTextSize(1);
-    tft.drawString(hint_display, 20, 160);
+    tft.drawString(hint_display, 120, 160);
   }
 
   tft.setTextDatum(MC_DATUM);

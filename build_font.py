@@ -66,7 +66,7 @@ if __name__ == "__main__":
     print("Building UTF-8 fonts for buddy app...\n")
 
     all_ok = True
-    for size in [16, 24, 32]:
+    for size in [10, 16, 24, 32]:
         if not build_font(size):
             all_ok = False
 

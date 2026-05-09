@@ -401,40 +401,43 @@ static void draw_terminal() {
   tft.loadFont("UTF8-Latin1-10", LittleFS);
 
   tft.setTextDatum(TL_DATUM);
+  tft.setTextWrap(false);  // Prevent TFT from auto-wrapping (would advance Y unexpectedly)
   tft.setTextSize(1);
 
-  const int line_height = 14;
+  // Measure actual font height so rows never overlap
+  const int line_height = tft.fontHeight() + 2;  // +2px leading
   const int padding_top = 6;
-  const int max_visible_lines = (240 - padding_top - 6) / line_height;  // 6px bottom padding
+  const int max_visible_lines = (240 - padding_top - 6) / line_height;
 
-  // Draw all lines in circular buffer
+  // Draw all lines in circular buffer using drawString (TL_DATUM: y = top of glyph, not baseline)
   for (int row = 0; row < term_count; row++) {
     int idx = term_bufIndex(row);
     const TerminalLine& tline = term_lines[idx];
     int y = padding_top + row * line_height;
 
+    // Fill row background first to erase any previous content at this y
+    tft.fillRect(0, y, 240, line_height, TFT_BLACK);
     tft.setTextColor(tline.color, TFT_BLACK);
-    tft.setCursor(0, y);
-    tft.print(tline.text);
+    tft.drawString(tline.text, 0, y);
   }
 
-  // Erase rows below content (clear old text)
+  // Erase rows below content
   for (int row = term_count; row < max_visible_lines; row++) {
     int y = padding_top + row * line_height;
-    tft.setTextColor(TFT_BLACK, TFT_BLACK);
-    tft.setCursor(0, y);
-    tft.print("                                    ");  // 36 spaces
+    tft.fillRect(0, y, 240, line_height, TFT_BLACK);
   }
 
-  // Draw status line if Claude is processing
+  // Draw status indicator if Claude is processing
   if (buddy.running_sessions > 0 && term_count < max_visible_lines) {
     int y = padding_top + term_count * line_height;
+    tft.fillRect(0, y, 240, line_height, TFT_BLACK);
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.setCursor(0, y);
-    tft.print("[Claude thinking...]");
+    tft.drawString("[Claude thinking...]", 0, y);
   }
 
   terminal_dirty = false;
+
+  tft.setTextWrap(true);  // Restore wrap for other parts of the UI
 
   // Reload 16pt font
   tft.unloadFont();

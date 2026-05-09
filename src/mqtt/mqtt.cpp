@@ -27,7 +27,7 @@ void setup_MQTT() {
     client.setCallback(on_MQTT_message);
     client.setBufferSize(MQTT_MAX_PACKET_SIZE);
     
-    #if defined(ESP32)
+    #if  defined(ESP32C3)
     String client_id = "esp32-client-" + String(WiFi.macAddress());
     #else
     String client_id = "esp8266-client-" + WiFi.macAddress();
@@ -42,7 +42,7 @@ void attempt_MQTT_reconnect() {
     return;
   }
   // Serial.println("Attempting MQTT connection...");
-  #if defined(ESP32)
+  #if  defined(ESP32C3)
   String client_id = "esp32-client-" + String(WiFi.macAddress());
   #else
   String client_id = "esp8266-client-" + WiFi.macAddress();

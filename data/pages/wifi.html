@@ -219,10 +219,15 @@
         fetch(baseUrl + '/scan')
             .then(response => response.json())
             .then(data => {
+                if (data.scanning) {
+                    // Scan still running on device — retry in 2s
+                    setTimeout(loadNetworks, 2000);
+                    return;
+                }
+
                 data.networks.sort((a, b) => b.rssi - a.rssi);
 
                 let html = '';
-
                 data.networks.forEach(network => {
                     html += `
                             <div class="network" onclick="selectNetwork('${network.ssid}', ${network.secure})">
@@ -231,27 +236,19 @@
                                         <img src="./images/wifi_${getSignalLevel(network.rssi)}.png" alt="Signal Strength">
                                     </div>
                                     <div>${network.ssid}</div>
-                                </div> 
+                                </div>
                                 <div>${network.secure ? '🔒' : ''}</div>
                             </div>`;
                 });
                 document.getElementById('networks').innerHTML = html;
                 loading.style.display = 'none';
+                loadButton.classList.remove('spin');
             })
             .catch(() => {
-                setTimeout(() => {
-                    loading.style.display = 'none';
-                }, 800)
-
+                loading.style.display = 'none';
+                loadButton.classList.remove('spin');
                 failed.style.display = 'block';
-                setTimeout(() => {
-                    failed.style.display = 'none';
-                }, 800);
-            })
-            .finally(() => {
-                setTimeout(() => {
-                    loadButton.classList.remove('spin');
-                }, 800);
+                setTimeout(() => { failed.style.display = 'none'; }, 2000);
             });
     }
 

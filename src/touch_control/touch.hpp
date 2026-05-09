@@ -6,6 +6,7 @@
 #include "assets/qr_codes/wifi_qr_code.hpp"
 #include "ui/menu/menu.hpp"
 #include "ui/list_menu/list_menu.hpp"
+#include "web/web.hpp"
 #include "TFT_eSPI.h"
 #include "map"
 

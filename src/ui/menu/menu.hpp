@@ -47,6 +47,7 @@ void updateMenuLabels();
 void initializeMenu();
 void handleTimeboxClick();
 void handleBrightClick();
+void handleRotateClick();
 void handleSelectWifiClick();
 void handleWifiSelected();
 void returnToMenu();

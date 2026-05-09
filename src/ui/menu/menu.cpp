@@ -5,13 +5,16 @@ MenuItem menu_items[] = {
     {"WIFI", nextMenu, handleWifiClick, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
     {"REDES", nextMenu, handleSelectWifiClick, prevMenu, {wifi_0_bits, wifi_1_bits, wifi_2_bits, wifi_3_bits}, 3, NULL},
     {"BRILHO", nextMenu, handleBrightClick, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
+    {"ROTACAO", nextMenu, handleRotateClick, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL},
     {"TIMEBOX", nextMenu, handleTimeboxClick, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL},
     {"POMODORO", nextMenu, handlePomodoroClick, prevMenu, {pomodoro_0_bits, pomodoro_1_bits, pomodoro_2_bits, pomodoro_3_bits}, 2, NULL},
     {"ART", nextMenu, handleArtClick, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
     {"ANIMATE", nextMenu, handleAnimateClick, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
     {"TEST", nextMenu, handleTestMenuClick, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL}
 };
-#define MENU_COUNT 9
+#define MENU_COUNT 10
+#define BRIGHT_MENU_INDEX 3
+#define ROTATE_MENU_INDEX 4
 
 MenuItem original_menu_items[sizeof(menu_items) / sizeof(menu_items[0])];
 
@@ -28,8 +31,10 @@ void drawMenuBackground()
     tft.fillScreen(TFT_BLACK);
     tft.setTextDatum(MC_DATUM);
 
-    tft.drawXBitmap(0, 0, secondary_menu_bg_bits, 240, 240, TFT_BLACK, 0x8410);
-    tft.drawXBitmap(0, 80, menu_background_bits, 240, 100, TFT_BLACK, TFT_WHITE);
+    #if defined(ESP8266) || defined(ESP32)
+    tft.drawXBitmap(0, 0, secondary_menu_bg_bits, TFT_WIDTH, TFT_HEIGHT, TFT_BLACK, 0x8410);
+    tft.drawXBitmap(0, 80, menu_background_bits, TFT_WIDTH, TFT_HEIGHT/2.4, TFT_BLACK, TFT_WHITE);
+    #endif
 }
 
 void updateMenuLabels()
@@ -67,7 +72,9 @@ void prevMenu()
 void handleWifiClick()
 {
     route = "wifi_qr_code";
-    tft.drawXBitmap(0, 0, wifi_qr_code, 240, 240, TFT_BLACK, TFT_WHITE);
+    #if defined(ESP8266) || defined(ESP32)
+    tft.drawXBitmap(0, 0, wifi_qr_code, TFT_WIDTH, TFT_HEIGHT, TFT_BLACK, TFT_WHITE);
+    #endif
     setBrightnessPercent(5);
     start_ap();
 }
@@ -157,7 +164,7 @@ void handlePomodoroClick()
 void handleBrightClick()
 {
     static int brightness_level = 0;
-    brightness_level = min(1, (brightness_level + 1) % 4);
+    brightness_level = (brightness_level + 1) % 4;
 
     setBrightnessPercent(brightness_level * 20);
 
@@ -177,6 +184,20 @@ void handleBrightClick()
     tft.drawString(menu_items[current_menu].label, main_item_pos.x, main_item_pos.y);
 
     delay(500);
+}
+
+void handleRotateClick()
+{
+    static int rotation = 0;
+    rotation = (rotation + 1) % 4;  // 0, 1, 2, 3
+
+    tft.setRotation(rotation);
+    tft.fillScreen(TFT_BLACK);
+    initializeMenu();  // Redraw menu with new orientation
+
+    // Save rotation to EEPROM (address 0)
+    EEPROM.write(0, rotation);
+    EEPROM.commit();
 }
 
 void handleTestMenuClick()

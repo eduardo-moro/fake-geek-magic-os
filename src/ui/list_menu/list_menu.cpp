@@ -60,7 +60,7 @@ String sanitizeText(const String& text) {
 const int ITEM_HEIGHT = 20;        // Reduced for smaller font
 const int MENU_TOP = 10;
 const int MENU_LEFT = 5;
-const int SCREEN_WIDTH = 240;      // Total screen width
+const int SCREEN_WIDTH = TFT_HEIGHT;      // Total screen width
 const int VALUE_RIGHT_MARGIN = 5;  // Margin from right edge
 const int VALUE_WIDTH = 20;        // Width reserved for value text (signal 0-4)
 const int LABEL_MAX_WIDTH = SCREEN_WIDTH - MENU_LEFT - VALUE_WIDTH - VALUE_RIGHT_MARGIN - 10; // ~200px for label
@@ -75,7 +75,7 @@ void initListMenu(const std::vector<ListMenuItem>& items) {
     menuState.previousIndex = 0;
     menuState.scrollOffset = 0;
     menuState.previousScrollOffset = 0;
-    menuState.visibleItems = (240 - MENU_TOP * 2) / ITEM_HEIGHT; // Calculate based on screen height
+    menuState.visibleItems = (TFT_HEIGHT - MENU_TOP * 2) / ITEM_HEIGHT; // Calculate based on screen height
     menuState.isSelected = false;
     menuState.scrollTimer = 0;
     menuState.labelScrollOffset = 0;

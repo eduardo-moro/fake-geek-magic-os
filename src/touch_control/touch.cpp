@@ -60,10 +60,14 @@ bool isValidRoute() {
 
 void detectMenuTouch()
 {
+    #ifdef USE_TOUCH_SENSOR
+    int reading = (touchRead(BUTTON_PIN) < TOUCH_THRESHOLD) ? 1 : 0;  // 1 = touched
+    #else
     int reading = digitalRead(BUTTON_PIN);
+    #endif
 
-    // Capacitive touch sensors read HIGH when touched (opposite of pull-up buttons)
-    if (reading == HIGH)
+    // Button pressed when reading matches BTN_STTS
+    if (reading == BTN_STTS)
     {
         if (buttonState == BTN_RELEASED)
         {
@@ -185,6 +189,7 @@ void handlePixelQuit()
 void handleWifiQrQuit()
 {
     Serial.println("wifi qr quit");
+    stop_ap();
     route = "menu";
     initializeMenu();
 }

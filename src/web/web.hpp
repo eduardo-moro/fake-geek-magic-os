@@ -13,7 +13,11 @@
 #include "ESP8266WiFi.h"
 #include "ESP8266WebServer.h"
 #define WebServerType ESP8266WebServer
-#elif defined(ESP32)
+#elif  defined(ESP32C3)
+#include <WiFi.h>
+#include <WebServer.h>
+#define WebServerType WebServer
+#elif  defined(ESP32)
 #include <WiFi.h>
 #include <WebServer.h>
 #define WebServerType WebServer
@@ -44,9 +48,15 @@ extern TFT_eSPI tft;
 extern DNSServer dnsServer;
 extern String route;
 extern WebServerType server;
+extern String pendingConnectSSID;
+extern String pendingConnectPassword;
+extern bool pendingConnect;
+extern bool scanRequested;
+extern String cachedScanJson;
 
 void start_ap();
 void stop_ap();
+void handleScanLoop();
 void start_client(const char *ssid, const char *password);
 void host_webpage();
 void saveNetwork(const String &ssid, const String &password);

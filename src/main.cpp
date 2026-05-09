@@ -36,7 +36,9 @@ unsigned long ap_active_time = 0;
 // Web server
 #if defined(ESP8266)
 ESP8266WebServer server(80);
-#elif defined(ESP32)
+#elif  defined(ESP32C3)
+WebServer server(80);
+#elif  defined(ESP32)
 WebServer server(80);
 #endif
 DNSServer dnsServer;
@@ -82,11 +84,18 @@ void handleAnimateClick() {
 
 void setup()
 {
+  #ifdef USE_TOUCH_SENSOR
+  // Touch sensor ready (no pinMode needed)
+  Serial.println("Touch sensor ready on GPIO 32");
+  #else
   pinMode(BUTTON_PIN, INPUT_PULLUP);
-  pinMode(TFT_BL, OUTPUT);
-
+  #endif
+  if (TFT_BL >= 0) pinMode(TFT_BL, OUTPUT);
+  
+  #if defined(ESP8266)
   analogWriteRange(255);
   analogWriteFreq(1000);
+  #endif
 
   setBrightnessPercent(60);
 
@@ -94,11 +103,16 @@ void setup()
   Serial.println("Initializing TFT display...");
 
   tft.init();
-  tft.setRotation(0);
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextFont(1);
 
   EEPROM.begin(EEPROM_SIZE);
+
+  // Restore saved rotation (default 0 if not set)
+  uint8_t savedRotation = EEPROM.read(0);
+  if (savedRotation > 3) savedRotation = 0;  // Validate
+  tft.setRotation(savedRotation);
+
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextFont(1);
 
   if (connectToBestNetwork())
   {
@@ -131,9 +145,24 @@ void setup()
 
 void loop()
 {
+  // Debug: print touch sensor value every 500ms for calibration
+  static uint32_t lastPrintTime = 0;
+  if (millis() - lastPrintTime > 500) {
+    lastPrintTime = millis();
+    #ifdef USE_TOUCH_SENSOR
+    int touchValue = touchRead(BUTTON_PIN);
+    Serial.printf("Touch value: %d (threshold: %d)\n", touchValue, TOUCH_THRESHOLD);
+    #endif
+  }
+
   if (currentNotification.hasUnread) {
     displayNotification();
-    if (digitalRead(BUTTON_PIN) == HIGH) { // button is touched
+    #ifdef USE_TOUCH_SENSOR
+    bool buttonPressed = (touchRead(BUTTON_PIN) < TOUCH_THRESHOLD);
+    #else
+    bool buttonPressed = (digitalRead(BUTTON_PIN) == HIGH);
+    #endif
+    if (buttonPressed) { // button is touched
         currentNotification.hasUnread = false;
         tft.fillScreen(TFT_BLACK);
         delay(100); // simple debounce
@@ -198,7 +227,13 @@ void loop()
   if (ap_active)
   {
     dnsServer.processNextRequest();
-
+    handleScanLoop();
     qr_code_timeout();
+  }
+
+  if (pendingConnect)
+  {
+    pendingConnect = false;
+    start_client(pendingConnectSSID.c_str(), pendingConnectPassword.c_str());
   }
 }

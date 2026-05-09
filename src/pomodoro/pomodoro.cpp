@@ -34,15 +34,6 @@ String colorToString(int angle, uint16_t color565) {
     uint8_t g = ((color565 >> 5) & 0x3F) * 255 / 63;
     uint8_t b = (color565 & 0x1F) * 255 / 31;
 
-    Serial.print("DEBUG: Inside colorToString - angle: ");
-    Serial.print(angle);
-    Serial.print(", r: ");
-    Serial.print(r);
-    Serial.print(", g: ");
-    Serial.print(g);
-    Serial.print(", b: ");
-    Serial.println(b);
-
     return String(angle) + "," + String(r) + "," + String(g) + "," + String(b);
 }
 

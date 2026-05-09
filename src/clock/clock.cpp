@@ -40,15 +40,21 @@ void drawTimeFullScreen()
     char timeStr[6]; // "HH:MM:SS"
     snprintf(timeStr, sizeof(timeStr), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
 
+    #if defined(ESP8266)
     tft.setTextSize(7);
-    tft.drawString(timeStr, 120, 120);
+    #elif  defined(ESP32C3)
+    tft.setTextSize(4);
+    #elif  defined(ESP32)
+    tft.setTextSize(7);
+    #endif
+    tft.drawString(timeStr, TFT_WIDTH/2, TFT_HEIGHT/2);
 
-    int secw = map(timeinfo.tm_sec, 0, 60, 0, 240);
+    int secw = map(timeinfo.tm_sec, 0, 60, 0, TFT_WIDTH);
 
     tft.setTextSize(2);
 
-    tft.fillRect(0, 238, secw, 240, TFT_CYAN);
-    tft.fillRect(secw, 238, 240 - secw, 2, TFT_BLACK);
+    tft.fillRect(0, TFT_HEIGHT-2, secw, TFT_WIDTH, TFT_CYAN);
+    tft.fillRect(secw, TFT_HEIGHT-2, TFT_WIDTH - secw, 2, TFT_BLACK);
 
     // timebox countdown
     if (timebox > 0)
@@ -64,7 +70,7 @@ void drawTimeFullScreen()
             last_timebox_update = current;
         }
 
-        secw = map(timebox, 0, initial_timebox * 60, 0, 240);
+        secw = map(timebox, 0, initial_timebox * 60, 0, TFT_WIDTH);
 
         int color = TFT_CYAN;
 
@@ -77,9 +83,9 @@ void drawTimeFullScreen()
             color = TFT_YELLOW;
         }
 
-        int h = 233;
+        int h = TFT_WIDTH -7;
         tft.fillRect(0, h, secw, 3, color);
-        tft.fillRect(secw, h, 240 - secw, 3, TFT_BLACK);
+        tft.fillRect(secw, h, TFT_WIDTH - secw, 3, TFT_BLACK);
     }
 }
 

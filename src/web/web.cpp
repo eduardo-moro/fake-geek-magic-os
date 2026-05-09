@@ -2,9 +2,20 @@
 
 #if defined(ESP8266)
 int enc = ENC_TYPE_NONE;
-#elif defined(ESP32)
+#elif  defined(ESP32C3)
+int enc = WIFI_AUTH_OPEN;
+#elif  defined(ESP32)
 int enc = WIFI_AUTH_OPEN;
 #endif
+
+// Deferred connect state — set by /connect handler, consumed in main loop
+String pendingConnectSSID = "";
+String pendingConnectPassword = "";
+bool pendingConnect = false;
+
+// Scan state — managed only from main loop, never from HTTP callbacks
+bool scanRequested = false;
+String cachedScanJson = "{\"scanning\":true,\"networks\":[]}";
 
 void start_ap()
 {
@@ -12,13 +23,16 @@ void start_ap()
     if (ap_active)
         return;
 
-    WiFi.mode(WIFI_AP);
+    WiFi.mode(WIFI_AP_STA);
+    delay(200); // let station radio initialize before softAP starts
 
     while (!WiFi.softAP("moro's mini tv", "morinho0"))
     {
         Serial.print(".");
         delay(100);
     }
+
+    scanRequested = true; // main loop will kick off the first async scan
 
     dnsServer.start(53, "*", WiFi.softAPIP());
 
@@ -41,19 +55,42 @@ void stop_ap()
     return;
 }
 
+void handleScanLoop()
+{
+    if (!ap_active) return;
+
+    int n = WiFi.scanComplete();
+
+    if (n >= 0) {
+        // Build and cache the result JSON
+        String json = "{\"scanning\":false,\"networks\":[";
+        for (int i = 0; i < n; ++i) {
+            if (i) json += ",";
+            json += "{";
+            json += "\"ssid\":\"" + WiFi.SSID(i) + "\",";
+            json += "\"rssi\":" + String(WiFi.RSSI(i)) + ",";
+            json += "\"secure\":" + String(WiFi.encryptionType(i) != enc);
+            json += "}";
+        }
+        json += "]}";
+        cachedScanJson = json;
+        WiFi.scanDelete();
+        scanRequested = false;
+    } else if (scanRequested && n != WIFI_SCAN_RUNNING) {
+        // Not running and scan was requested — start it
+        WiFi.scanNetworks(true);
+        cachedScanJson = "{\"scanning\":true,\"networks\":[]}";
+    }
+}
+
 void qr_code_timeout()
 {
-    if ((millis() - ap_active_time > 10000 || ap_connected) && route != "menu")
+    if (ap_connected && route != "menu")
     {
+        stop_ap();
         route = "menu";
         setBrightnessPercent(40);
         initializeMenu();
-        tft.drawString("ap on", 120, 14);
-
-        if (ap_connected)
-        {
-            stop_ap();
-        }
     }
 }
 
@@ -62,35 +99,19 @@ void start_client(const char *ssid, const char *password)
     if (ap_active)
         stop_ap();
 
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-
-    Serial.println("Connecting to WiFi...");
-
-    unsigned long start = millis();
+    saveNetwork(ssid, password);
+    Serial.println("Network saved, restarting...");
 
     tft.fillScreen(TFT_BLACK);
-    tft.setTextDatum(MC_DATUM);
-
-    while (WiFi.status() != WL_CONNECTED && millis() - start < 10000)
-    {
-        loop_wifi_icon();
-        delay(100);
-        Serial.print(".");
-    }
-
-    saveNetwork(ssid, password);
-
-    configTime(TZ_OFFSET, TZ_DST, "pool.ntp.org", "time.nist.gov");
-    setup_MQTT();
-
-    Serial.println("Connected to WiFi");
-    Serial.println(WiFi.localIP());
-
-    initializeMenu();
     tft.setTextSize(1);
-    tft.drawString(WiFi.localIP().toString(), 120, 14);
-    return;
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextPadding(0);
+    tft.drawString(String(ssid), 120, 110);
+    tft.drawString("Saved! Restarting...", 120, 130);
+
+    delay(1500);
+    ESP.restart();
 }
 
 void serveImage(const char *path)
@@ -149,23 +170,13 @@ void host_webpage()
         server.sendHeader("Location", "http://192.168.4.1");
         server.send(302, "text/plain", "Redirecting to setup"); });
 
-    // WiFi scan endpoint
+    // WiFi scan endpoint — only reads cached results, never calls scanNetworks()
     server.on("/scan", HTTP_GET, []()
               {
-
-        String json = "{";
-        json += "\"networks\":[";
-        int n = WiFi.scanNetworks();
-        for (int i = 0; i < n; ++i) {
-            if (i) json += ",";
-            json += "{";
-            json += "\"ssid\":\"" + WiFi.SSID(i) + "\",";
-            json += "\"rssi\":" + String(WiFi.RSSI(i)) + ",";
-            json += "\"secure\":" + String(WiFi.encryptionType(i) != enc);
-            json += "}";
+        if (WiFi.scanComplete() < 0) {
+            scanRequested = true; // ask main loop to (re)start scan
         }
-        json += "]}";
-        server.send(200, "application/json", json); });
+        server.send(200, "application/json", cachedScanJson); });
 
     // Connection endpoint
     server.on("/connect", HTTP_POST, []()
@@ -179,8 +190,10 @@ void host_webpage()
             return;
         }
 
-        server.send(200, "text/plain", "Connecting...");
-        start_client(ssid.c_str(), password.c_str()); });
+        pendingConnectSSID = ssid;
+        pendingConnectPassword = password;
+        pendingConnect = true;
+        server.send(200, "text/plain", "Connecting..."); });
 
     // Serve images
     server.on("/images/wifi_0.png", HTTP_GET, []()

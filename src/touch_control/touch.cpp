@@ -23,6 +23,9 @@ MenuCommand commandHandler[] = {
     {handleWifiQrQuit, doNothing, doNothing, doNothing},                    // WIFI_QR_CODE
     {handleListMenuClick, handleListMenuSelect, handleListMenuDoubleClick, doNothing},  // WIFI_SELECT
     {handleListMenuClick, handleListMenuSelect, handleListMenuDoubleClick, doNothing}   // TEST_MENU
+#ifdef ESP32
+    ,{handleBuddyAccept, handleBuddyQuit, doNothing, doNothing}              // BUDDY
+#endif
 };
 
 std::map<String, int> routeMap = {
@@ -34,6 +37,9 @@ std::map<String, int> routeMap = {
     {"wifi_qr_code", 5},
     {"wifi_select", 6},
     {"test_menu", 7}
+#ifdef ESP32
+    ,{"buddy", 8}
+#endif
 };
 
 void touch_loop()
@@ -211,6 +217,24 @@ void handleListMenuSelect()
     Serial.println("list menu select");
     listMenuSelect();
 }
+
+#ifdef ESP32
+void handleBuddyAccept()
+{
+    // Button A pressed (pin 32, cap-touch) = approve permission prompt
+    Serial.println("buddy: button A pressed (approve)");
+    buddy_app_send_approve();
+}
+
+void handleBuddyQuit()
+{
+    // Long press button A (hold) = exit buddy app
+    Serial.println("buddy: button A held (exit)");
+    buddy_app_quit();
+    route = "menu";
+    initializeMenu();
+}
+#endif
 
 void doNothing() {}
 

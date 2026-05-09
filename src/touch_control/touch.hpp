@@ -40,6 +40,10 @@ void handleListMenuSelect();
 void doNothing();
 void registerUserActivity();
 void updateRoute(const String& route);
+#ifdef ESP32
+void handleBuddyAccept();
+void handleBuddyQuit();
+#endif
 
 typedef struct MenuCommand
 {

@@ -11,8 +11,15 @@ MenuItem menu_items[] = {
     {"ART", nextMenu, handleArtClick, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
     {"ANIMATE", nextMenu, handleAnimateClick, prevMenu, {bright_0_bits, bright_1_bits, bright_2_bits, bright_3_bits}, 2, NULL},
     {"TEST", nextMenu, handleTestMenuClick, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL}
+#ifdef ESP32
+    ,{"BUDDY", nextMenu, handleBuddyClick, prevMenu, {settings_0_bits, settings_1_bits, settings_2_bits, settings_3_bits}, 2, NULL}
+#endif
 };
+#ifdef ESP32
+#define MENU_COUNT 11
+#else
 #define MENU_COUNT 10
+#endif
 #define BRIGHT_MENU_INDEX 3
 #define ROTATE_MENU_INDEX 4
 
@@ -205,3 +212,13 @@ void handleTestMenuClick()
     // Show the test menu with 30 items
     showTestMenu();
 }
+
+#ifdef ESP32
+void handleBuddyClick()
+{
+    route = "buddy";
+    setBrightnessPercent(40);
+    delay(500);
+    buddy_app_start();
+}
+#endif

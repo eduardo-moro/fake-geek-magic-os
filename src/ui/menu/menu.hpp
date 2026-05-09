@@ -22,11 +22,23 @@
 #include "../web/web.hpp"
 #include "main.hpp"
 
-#define CLOCK_MENU_INDEX 0
-#define WIFI_MENU_INDEX 1
-#define WIFI_SELECT_INDEX 2
-#define BRIGHT_MENU_INDEX 3
-#define TIMEBOX_MENU_INDEX 4
+#ifdef ESP32
+#include "buddy/buddy_app.hpp"
+#endif
+
+#define CLOCK_MENU_INDEX     0
+#define WIFI_MENU_INDEX      1
+#define WIFI_SELECT_INDEX    2
+#define BRIGHT_MENU_INDEX    3
+#define ROTATION_MENU_INDEX  4
+#define TIMEBOX_MENU_INDEX   5
+#define POMODORO_MENU_INDEX  6
+#define ART_MENU_INDEX       7
+#define ANIMATE_MENU_INDEX   8
+#define TEST_MENU_INDEX      9
+#ifdef ESP32
+#define BUDDY_MENU_INDEX     10
+#endif
 
 extern TFT_eSPI tft;
 extern bool wasTouched;
@@ -54,5 +66,8 @@ void returnToMenu();
 void handleArtClick();
 void handleAnimateClick();
 void handleTestMenuClick();
+#ifdef ESP32
+void handleBuddyClick();
+#endif
 
 #endif // MENU_H

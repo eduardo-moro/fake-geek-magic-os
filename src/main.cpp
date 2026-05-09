@@ -1,4 +1,7 @@
 #include "main.hpp"
+#ifdef ESP32
+#include "buddy/ble_bridge.h"
+#endif
 
 const int PWM_CHANNEL = 0;
 
@@ -91,7 +94,7 @@ void setup()
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   #endif
   if (TFT_BL >= 0) pinMode(TFT_BL, OUTPUT);
-  
+
   #if defined(ESP8266)
   analogWriteRange(255);
   analogWriteFreq(1000);
@@ -101,6 +104,11 @@ void setup()
 
   Serial.begin(115200);
   Serial.println("Initializing TFT display...");
+
+  #ifdef ESP32
+  // Initialize BLE for Claude buddy
+  bleInit("Claude-Buddy");
+  #endif
 
   tft.init();
 
@@ -145,16 +153,6 @@ void setup()
 
 void loop()
 {
-  // Debug: print touch sensor value every 500ms for calibration
-  static uint32_t lastPrintTime = 0;
-  if (millis() - lastPrintTime > 500) {
-    lastPrintTime = millis();
-    #ifdef USE_TOUCH_SENSOR
-    int touchValue = touchRead(BUTTON_PIN);
-    Serial.printf("Touch value: %d (threshold: %d)\n", touchValue, TOUCH_THRESHOLD);
-    #endif
-  }
-
   if (currentNotification.hasUnread) {
     displayNotification();
     #ifdef USE_TOUCH_SENSOR
@@ -223,6 +221,12 @@ void loop()
   {
     animate_loop();
   }
+  #ifdef ESP32
+  else if (route == "buddy")
+  {
+    buddy_app_loop();
+  }
+  #endif
 
   if (ap_active)
   {

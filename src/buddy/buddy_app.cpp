@@ -39,6 +39,7 @@ static int term_count = 0;
 static int term_scroll = 0;
 static bool terminal_mode = false;
 static unsigned long button_b_press_time = 0;
+static int last_rendered_count = 0;  // Track what we've already drawn
 
 struct BuddyContext {
   BuddyState state;
@@ -385,22 +386,41 @@ static void draw_busy() {
 }
 
 static void draw_terminal() {
-  tft.fillScreen(TFT_BLACK);
-
   // Load 10pt font for terminal
-  tft.unloadFont();
-  tft.loadFont("UTF8-Latin1-10", LittleFS);
+  if (last_rendered_count == 0) {
+    // First time: full redraw
+    tft.fillScreen(TFT_BLACK);
+    tft.unloadFont();
+    tft.loadFont("UTF8-Latin1-10", LittleFS);
+  } else {
+    // Incremental: just load font, don't clear
+    tft.unloadFont();
+    tft.loadFont("UTF8-Latin1-10", LittleFS);
+  }
 
   tft.setTextDatum(TL_DATUM);
   tft.setTextSize(1);
 
-  const int visible_lines = 17;
-  const int line_height = 13;
-  int y = 5;
+  const int visible_lines = 16;
+  const int line_height = 14;  // Increased from 13 to prevent overlap
+  const int start_y = 5;
 
-  // Draw visible lines
-  for (int i = 0; i < visible_lines && (term_scroll + i) < term_count; i++) {
-    const TerminalLine& tline = term_lines[term_scroll + i];
+  // Recalculate scroll to always show latest lines
+  if (term_count > visible_lines) {
+    term_scroll = term_count - visible_lines;
+  } else {
+    term_scroll = 0;
+  }
+
+  // Draw only new lines added since last render (incremental)
+  for (int i = last_rendered_count; i < term_count; i++) {
+    int screen_line = i - term_scroll;
+    if (screen_line < 0 || screen_line >= visible_lines) {
+      continue;  // Not visible on current screen
+    }
+
+    const TerminalLine& tline = term_lines[i];
+    int y = start_y + screen_line * line_height;
 
     switch (tline.type) {
       case LINE_USER:
@@ -419,8 +439,17 @@ static void draw_terminal() {
 
     tft.setCursor(5, y);
     tft.print(tline.text);
-    y += line_height;
   }
+
+  // Draw status line at bottom if Claude is processing
+  if (buddy.running_sessions > 0) {
+    int status_y = 5 + visible_lines * line_height;
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setCursor(5, status_y);
+    tft.print("[Claude thinking...]");
+  }
+
+  last_rendered_count = term_count;
 
   // Reload 16pt font
   tft.unloadFont();
@@ -648,6 +677,7 @@ void buddy_app_loop() {
       if (press_duration >= 500) {
         // Long press: toggle terminal mode
         terminal_mode = !terminal_mode;
+        last_rendered_count = 0;  // Reset to trigger full redraw when entering/leaving terminal
         Serial.printf("[buddy] button B: toggle terminal mode = %d\n", terminal_mode);
         update_display();
       } else {

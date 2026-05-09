@@ -3,9 +3,12 @@
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <ArduinoJson.h>
+#include <LittleFS.h>
 #include "../display/display.hpp"
 
 extern TFT_eSPI tft;
+
+static bool font_loaded = false;
 
 #ifdef ESP32
 #define DENY_BUTTON_PIN 0
@@ -186,28 +189,13 @@ static void read_ble_lines() {
     if (b == '\n') {
       if (line_buffer.length() > 0) {
         Serial.printf("[buddy] rx: %s\n", line_buffer.c_str());
-
-        // Debug: if line contains "entries", show raw bytes to check encoding
-        if (line_buffer.indexOf("entries") >= 0) {
-          Serial.print("[buddy] raw bytes: ");
-          for (size_t i = 0; i < line_buffer.length(); i++) {
-            uint8_t c = (uint8_t)line_buffer[i];
-            if (c < 32 || c >= 127) {
-              Serial.printf("[%02x]", c);
-            } else {
-              Serial.write(c);
-            }
-          }
-          Serial.println();
-        }
-
         process_json_line(line_buffer);
       }
       line_buffer = "";
     } else if (b >= 32 && b < 127) {
       line_buffer += (char)b;
-    } else {
-      // Non-ASCII byte (possibly UTF-8) — add it anyway
+    } else if (b >= 0x80) {
+      // UTF-8 byte (part of multibyte sequence)
       line_buffer += (char)b;
     }
   }
@@ -292,32 +280,63 @@ static void draw_attention() {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   tft.setTextDatum(MC_DATUM);
-  tft.setTextSize(4);
-  tft.drawString("APPROVE?", 120, 50);
+
+  if (font_loaded) {
+    tft.setTextSize(2);
+    tft.drawString("APPROVE?", 120, 40);
+  } else {
+    tft.setTextSize(4);
+    tft.drawString("APPROVE?", 120, 50);
+  }
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextDatum(MC_DATUM);
-  tft.setTextSize(2);
-  tft.drawString(buddy.prompt_tool, 120, 120);
+
+  if (font_loaded) {
+    tft.setTextSize(1);
+    tft.drawString(buddy.prompt_tool, 120, 70);
+  } else {
+    tft.setTextSize(2);
+    tft.drawString(buddy.prompt_tool, 120, 120);
+  }
 
   tft.setTextDatum(TL_DATUM);
-  tft.setTextSize(1);
+
   char hint_display[100];
   strncpy(hint_display, buddy.prompt_hint, sizeof(hint_display) - 1);
   hint_display[sizeof(hint_display) - 1] = '\0';
-  if (strlen(hint_display) > 30) {
+
+  if (!font_loaded && strlen(hint_display) > 30) {
     hint_display[27] = '.';
     hint_display[28] = '.';
     hint_display[29] = '.';
     hint_display[30] = '\0';
   }
-  tft.drawString(hint_display, 20, 160);
+
+  if (font_loaded) {
+    tft.setTextSize(1);
+    tft.drawString(hint_display, 10, 100);
+  } else {
+    tft.setTextSize(1);
+    tft.drawString(hint_display, 20, 160);
+  }
 
   tft.setTextDatum(MC_DATUM);
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.drawString("TAP=OK", 80, 210);
+  if (font_loaded) {
+    tft.setTextSize(1);
+    tft.drawString("TAP=OK", 75, 190);
+  } else {
+    tft.drawString("TAP=OK", 80, 210);
+  }
+
   tft.setTextColor(TFT_RED, TFT_BLACK);
-  tft.drawString("BTN=NO", 160, 210);
+  if (font_loaded) {
+    tft.setTextSize(1);
+    tft.drawString("BTN=NO", 165, 190);
+  } else {
+    tft.drawString("BTN=NO", 160, 210);
+  }
 }
 
 static void update_display() {
@@ -380,6 +399,15 @@ void buddy_app_start() {
   setBrightnessPercent(40);
   init_buddy_context();
   line_buffer = "";
+
+  // Load UTF-8 capable font from LittleFS
+  if (LittleFS.begin()) {
+    tft.loadFont("NerdFontSubset-16", LittleFS);
+    font_loaded = true;
+    Serial.println("[buddy] font loaded");
+  } else {
+    Serial.println("[buddy] LittleFS failed");
+  }
 
 #ifdef ESP32
   pinMode(DENY_BUTTON_PIN, INPUT_PULLUP);
@@ -467,4 +495,8 @@ void buddy_app_loop() {
 
 void buddy_app_quit() {
   line_buffer = "";
+  if (font_loaded) {
+    tft.unloadFont();
+    font_loaded = false;
+  }
 }

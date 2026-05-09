@@ -33,7 +33,7 @@ struct TerminalLine {
   TerminalLineType type;
 };
 
-static const int TERM_MAX_LINES = 18;
+static const int TERM_MAX_LINES = 16;  // 240px screen: (240 - 12 padding) / 14px per line = ~16 lines
 static const int TERM_MAX_COLS = 36;
 static TerminalLine term_lines[TERM_MAX_LINES];
 static int term_count = 0;
@@ -398,7 +398,9 @@ static void draw_terminal() {
   tft.setTextSize(1);
 
   const int line_height = 14;
-  int y = 0;
+  const int padding_top = 0;
+  const int padding_bottom = 6;
+  int y = padding_top;
 
   // Draw all lines in circular buffer
   for (int row = 0; row < term_count; row++) {
@@ -426,8 +428,8 @@ static void draw_terminal() {
     y += line_height;
   }
 
-  // Draw status line if Claude is processing
-  if (buddy.running_sessions > 0) {
+  // Draw status line if Claude is processing (only if it fits)
+  if (buddy.running_sessions > 0 && y < (240 - padding_bottom - line_height)) {
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
     tft.setCursor(0, y);
     tft.print("[Claude thinking...]");

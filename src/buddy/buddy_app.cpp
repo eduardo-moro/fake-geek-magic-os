@@ -70,24 +70,23 @@ static void process_heartbeat(const JsonObject& obj) {
   buddy.tokens = obj["tokens"] | 0;
   buddy.tokens_today = obj["tokens_today"] | 0;
 
-  buddy.prompt_pending = obj.containsKey("prompt");
+  JsonObject pr = obj["prompt"];
+  buddy.prompt_pending = !pr.isNull();
   if (buddy.prompt_pending) {
-    JsonObject prompt = obj["prompt"];
-    const char* id = prompt["id"];
-    if (id) {
-      strncpy(buddy.prompt_id, id, sizeof(buddy.prompt_id) - 1);
-      buddy.prompt_id[sizeof(buddy.prompt_id) - 1] = '\0';
-    }
-    const char* tool = prompt["tool"];
-    if (tool) {
-      strncpy(buddy.prompt_tool, tool, sizeof(buddy.prompt_tool) - 1);
-      buddy.prompt_tool[sizeof(buddy.prompt_tool) - 1] = '\0';
-    }
-    const char* hint = prompt["hint"];
-    if (hint) {
-      strncpy(buddy.prompt_hint, hint, sizeof(buddy.prompt_hint) - 1);
-      buddy.prompt_hint[sizeof(buddy.prompt_hint) - 1] = '\0';
-    }
+    const char* pid = pr["id"];
+    const char* pt = pr["tool"];
+    const char* ph = pr["hint"];
+    strncpy(buddy.prompt_id, pid ? pid : "", sizeof(buddy.prompt_id) - 1);
+    buddy.prompt_id[sizeof(buddy.prompt_id) - 1] = '\0';
+    strncpy(buddy.prompt_tool, pt ? pt : "", sizeof(buddy.prompt_tool) - 1);
+    buddy.prompt_tool[sizeof(buddy.prompt_tool) - 1] = '\0';
+    strncpy(buddy.prompt_hint, ph ? ph : "", sizeof(buddy.prompt_hint) - 1);
+    buddy.prompt_hint[sizeof(buddy.prompt_hint) - 1] = '\0';
+    Serial.printf("[buddy] prompt: %s - %s\n", buddy.prompt_tool, buddy.prompt_hint);
+  } else {
+    buddy.prompt_id[0] = 0;
+    buddy.prompt_tool[0] = 0;
+    buddy.prompt_hint[0] = 0;
   }
 
   JsonArray entries = obj["entries"];
@@ -100,14 +99,6 @@ static void process_heartbeat(const JsonObject& obj) {
   }
 
   buddy.last_heartbeat = millis();
-
-  if (buddy.prompt_pending) {
-    buddy.state = BUDDY_ATTENTION;
-  } else if (buddy.running_sessions > 0) {
-    buddy.state = BUDDY_BUSY;
-  } else if (buddy.total_sessions > 0) {
-    buddy.state = BUDDY_IDLE;
-  }
 }
 
 static void process_command(const JsonObject& obj) {
@@ -122,6 +113,7 @@ static void process_command(const JsonObject& obj) {
     response["ok"] = true;
     JsonObject data = response.createNestedObject("data");
     data["name"] = "Claude-Buddy";
+    data["owner"] = "";
     data["sec"] = bleSecure();
 
     JsonObject bat = data.createNestedObject("bat");
@@ -133,6 +125,8 @@ static void process_command(const JsonObject& obj) {
     JsonObject sys = data.createNestedObject("sys");
     sys["up"] = millis() / 1000;
     sys["heap"] = ESP.getFreeHeap();
+    sys["fsFree"] = 0;
+    sys["fsTotal"] = 0;
 
     JsonObject stats = data.createNestedObject("stats");
     stats["appr"] = 0;
@@ -145,7 +139,7 @@ static void process_command(const JsonObject& obj) {
     serializeJson(response, json_str);
     json_str += "\n";
     size_t written = bleWrite((const uint8_t*)json_str.c_str(), json_str.length());
-    Serial.printf("[buddy] status ack sent (%d bytes): %s\n", written, json_str.c_str());
+    Serial.printf("[buddy] status ack sent (%d bytes)\n", written);
   } else if (strcmp(cmd, "owner") == 0 || strcmp(cmd, "name") == 0) {
     StaticJsonDocument<64> response;
     response["ack"] = cmd;
@@ -313,15 +307,6 @@ static void draw_attention() {
 }
 
 static void update_display() {
-  static unsigned long last_display_update = 0;
-  unsigned long now = millis();
-
-  // Throttle display updates to prevent flickering
-  if (now - last_display_update < 100) {
-    return;
-  }
-  last_display_update = now;
-
   uint32_t pk = blePasskey();
   if (pk > 0) {
     draw_pairing();
@@ -391,7 +376,7 @@ void buddy_app_start() {
 }
 
 void buddy_app_loop() {
-  read_ble_lines();
+  read_ble_lines();  // Process incoming heartbeats and update buddy state
 
   static uint32_t last_passkey = 0;
   uint32_t current_passkey = blePasskey();
@@ -405,6 +390,7 @@ void buddy_app_loop() {
 
   BuddyState prev_state = buddy.state;
 
+  // Update state based on current conditions
   if (!is_connected) {
     buddy.state = BUDDY_DISCONNECTED;
     buddy.total_sessions = 0;
@@ -419,7 +405,8 @@ void buddy_app_loop() {
     buddy.state = BUDDY_IDLE;
   }
 
-  if (buddy.state != prev_state || is_connected != was_connected) {
+  if (buddy.state != prev_state) {
+    Serial.printf("[buddy] state: %d → %d\n", prev_state, buddy.state);
     update_display();
   }
 

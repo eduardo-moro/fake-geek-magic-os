@@ -276,6 +276,40 @@ static void draw_busy() {
   tft.drawString(buddy.entry, 20, 160);
 }
 
+static void draw_centered_text(const char* text, int y, int max_width_chars) {
+  // Draw text with word wrap, centered
+  String full_text = text;
+  int pos = 0;
+  int line_y = y;
+
+  while (pos < (int)full_text.length()) {
+    int line_end = pos + max_width_chars;
+
+    if (line_end >= (int)full_text.length()) {
+      // Last line
+      String line = full_text.substring(pos);
+      tft.drawString(line.c_str(), 120, line_y);
+      break;
+    } else {
+      // Find last space before line_end to break at word boundary
+      int space_pos = line_end;
+      while (space_pos > pos && full_text[space_pos] != ' ') {
+        space_pos--;
+      }
+
+      if (space_pos == pos) {
+        // No space found, break at max_width
+        space_pos = line_end;
+      }
+
+      String line = full_text.substring(pos, space_pos);
+      tft.drawString(line.c_str(), 120, line_y);
+      line_y += 12;  // Line spacing
+      pos = space_pos + 1;  // Skip the space
+    }
+  }
+}
+
 static void draw_attention() {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
@@ -301,24 +335,15 @@ static void draw_attention() {
   }
 
   tft.setTextDatum(MC_DATUM);
-
-  char hint_display[100];
-  strncpy(hint_display, buddy.prompt_hint, sizeof(hint_display) - 1);
-  hint_display[sizeof(hint_display) - 1] = '\0';
-
-  if (!font_loaded && strlen(hint_display) > 30) {
-    hint_display[27] = '.';
-    hint_display[28] = '.';
-    hint_display[29] = '.';
-    hint_display[30] = '\0';
-  }
+  tft.setTextSize(1);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
 
   if (font_loaded) {
-    tft.setTextSize(1);
-    tft.drawString(hint_display, 120, 110);
+    // With smaller font, allow more chars per line
+    draw_centered_text(buddy.prompt_hint, 105, 32);
   } else {
-    tft.setTextSize(1);
-    tft.drawString(hint_display, 120, 160);
+    // With default font, fewer chars per line
+    draw_centered_text(buddy.prompt_hint, 160, 25);
   }
 
   tft.setTextDatum(MC_DATUM);

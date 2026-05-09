@@ -94,10 +94,9 @@ static void term_push(const char* text) {
     term_count++;
     terminal_full_redraw = false;
   } else {
-    // Scroll — head advances, all rows shift up visually → full redraw needed
+    // Buffer full — hardware scroll handles the visual shift, no full redraw needed
     slot = term_head;
     term_head = (term_head + 1) % TERM_MAX_LINES;
-    terminal_full_redraw = true;
   }
 
   strncpy(term_lines[slot].text, text, sizeof(term_lines[slot].text) - 1);
@@ -446,7 +445,10 @@ static void term_load_font() {
   tft.setTextWrap(false);
   tft.setTextSize(1);
   term_line_height = tft.fontHeight() + 2;
-  term_hw_setup_scroll(TERM_TFA, TERM_BFA);
+  // VSA must be exactly TERM_MAX_LINES * line_height so hw_scroll % VSA stays aligned
+  uint16_t vsa = TERM_MAX_LINES * term_line_height;
+  uint16_t bfa = 240 - TERM_TFA - vsa;
+  term_hw_setup_scroll(TERM_TFA, bfa);
   term_font_loaded = true;
 }
 
@@ -472,10 +474,10 @@ static void draw_terminal() {
 
   term_load_font();
 
-  const int max_visible = TERM_VSA / term_line_height;
+  // VSA must match what was set in term_load_font: exactly TERM_MAX_LINES * line_height
+  const int term_vsa = TERM_MAX_LINES * term_line_height;
 
   if (terminal_full_redraw) {
-    // Full redraw: clear, reset hw scroll, draw all buffered lines from top
     tft.fillScreen(TFT_BLACK);
     term_hw_scroll_to(TERM_TFA);
     term_hw_scroll = 0;
@@ -484,25 +486,24 @@ static void draw_terminal() {
     }
     terminal_full_redraw = false;
 
-  } else if (term_count <= max_visible) {
-    // Fill phase: buffer not yet full, just append new line — no hw scroll
+  } else if (term_count <= TERM_MAX_LINES) {
+    // Fill phase: append new line at bottom, no scroll
     int row = term_count - 1;
     term_draw_line(TERM_TFA + row * term_line_height, term_bufIndex(row));
     // Clear next row (erases old status indicator)
-    tft.fillRect(0, TERM_TFA + term_count * term_line_height, 240, term_line_height, TFT_BLACK);
+    if (row + 1 < TERM_MAX_LINES)
+      tft.fillRect(0, TERM_TFA + (row + 1) * term_line_height, 240, term_line_height, TFT_BLACK);
 
   } else {
-    // Scroll phase: write new line at physical y = TERM_TFA + term_hw_scroll
-    // (that row just scrolled off the visible top — safe to overwrite)
+    // Scroll phase: overwrite the row that just left the visible top, then scroll
     int write_y = TERM_TFA + term_hw_scroll;
     term_draw_line(write_y, term_bufIndex(term_count - 1));
-    // Advance scroll offset and issue hardware scroll command
-    term_hw_scroll = (term_hw_scroll + term_line_height) % TERM_VSA;
+    term_hw_scroll = (term_hw_scroll + term_line_height) % term_vsa;
     term_hw_scroll_to(TERM_TFA + term_hw_scroll);
   }
 
-  // Status indicator: show in the row after content if there is room
-  if (buddy.running_sessions > 0 && term_count < max_visible) {
+  // Status indicator when not full
+  if (buddy.running_sessions > 0 && term_count < TERM_MAX_LINES) {
     int y = TERM_TFA + term_count * term_line_height;
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
     tft.drawString("[thinking...]", 0, y);

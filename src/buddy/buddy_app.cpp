@@ -33,13 +33,14 @@ struct TerminalLine {
   TerminalLineType type;
 };
 
-static const int TERM_MAX_LINES = 40;
+static const int TERM_MAX_LINES = 18;
+static const int TERM_MAX_COLS = 36;
 static TerminalLine term_lines[TERM_MAX_LINES];
 static int term_count = 0;
-static int term_scroll = 0;
+static int term_head = 0;  // Circular buffer head
 static bool terminal_mode = false;
 static unsigned long button_b_press_time = 0;
-static int last_rendered_count = 0;  // Track what we've already drawn
+static bool terminal_dirty = true;  // Redraw when true
 
 struct BuddyContext {
   BuddyState state;
@@ -81,25 +82,24 @@ static bool deny_button_already_handled = false;
 static char last_prompt_id[64] = "";  // Track to avoid duplicate terminal lines
 
 static void term_push(const char* text, TerminalLineType type) {
+  int slot;
   if (term_count < TERM_MAX_LINES) {
-    strncpy(term_lines[term_count].text, text, sizeof(term_lines[term_count].text) - 1);
-    term_lines[term_count].text[sizeof(term_lines[term_count].text) - 1] = '\0';
-    term_lines[term_count].type = type;
+    slot = (term_head + term_count) % TERM_MAX_LINES;
     term_count++;
   } else {
-    // Shift all lines up and add new one at the end
-    for (int i = 0; i < TERM_MAX_LINES - 1; i++) {
-      term_lines[i] = term_lines[i + 1];
-    }
-    strncpy(term_lines[TERM_MAX_LINES - 1].text, text, sizeof(term_lines[0].text) - 1);
-    term_lines[TERM_MAX_LINES - 1].text[sizeof(term_lines[0].text) - 1] = '\0';
-    term_lines[TERM_MAX_LINES - 1].type = type;
+    slot = term_head;
+    term_head = (term_head + 1) % TERM_MAX_LINES;
   }
-  // Auto-scroll to show latest lines
-  const int visible_lines = 17;  // 240px / ~13px per line (10pt font)
-  if (term_count > visible_lines) {
-    term_scroll = term_count - visible_lines;
-  }
+
+  strncpy(term_lines[slot].text, text, sizeof(term_lines[slot].text) - 1);
+  term_lines[slot].text[sizeof(term_lines[slot].text) - 1] = '\0';
+  term_lines[slot].type = type;
+
+  terminal_dirty = true;
+}
+
+static inline int term_bufIndex(int row) {
+  return (term_head + row) % TERM_MAX_LINES;
 }
 
 static void process_heartbeat(const JsonObject& obj) {
@@ -386,42 +386,26 @@ static void draw_busy() {
 }
 
 static void draw_terminal() {
+  if (!terminal_dirty) return;
+
+  tft.fillScreen(TFT_BLACK);
+
   // Load 10pt font for terminal
-  if (last_rendered_count == 0) {
-    // First time: full redraw
-    tft.fillScreen(TFT_BLACK);
-    tft.unloadFont();
-    tft.loadFont("UTF8-Latin1-10", LittleFS);
-  } else {
-    // Incremental: just load font, don't clear
-    tft.unloadFont();
-    tft.loadFont("UTF8-Latin1-10", LittleFS);
-  }
+  tft.unloadFont();
+  tft.loadFont("UTF8-Latin1-10", LittleFS);
 
   tft.setTextDatum(TL_DATUM);
   tft.setTextSize(1);
 
-  const int visible_lines = 16;
-  const int line_height = 14;  // Increased from 13 to prevent overlap
-  const int start_y = 5;
+  const int line_height = 14;
+  int y = 0;
 
-  // Recalculate scroll to always show latest lines
-  if (term_count > visible_lines) {
-    term_scroll = term_count - visible_lines;
-  } else {
-    term_scroll = 0;
-  }
+  // Draw all lines in circular buffer
+  for (int row = 0; row < term_count; row++) {
+    int idx = term_bufIndex(row);
+    const TerminalLine& tline = term_lines[idx];
 
-  // Draw only new lines added since last render (incremental)
-  for (int i = last_rendered_count; i < term_count; i++) {
-    int screen_line = i - term_scroll;
-    if (screen_line < 0 || screen_line >= visible_lines) {
-      continue;  // Not visible on current screen
-    }
-
-    const TerminalLine& tline = term_lines[i];
-    int y = start_y + screen_line * line_height;
-
+    // Set color based on line type
     switch (tline.type) {
       case LINE_USER:
         tft.setTextColor(TFT_CYAN, TFT_BLACK);
@@ -437,19 +421,19 @@ static void draw_terminal() {
         break;
     }
 
-    tft.setCursor(5, y);
+    tft.setCursor(0, y);
     tft.print(tline.text);
+    y += line_height;
   }
 
-  // Draw status line at bottom if Claude is processing
+  // Draw status line if Claude is processing
   if (buddy.running_sessions > 0) {
-    int status_y = 5 + visible_lines * line_height;
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.setCursor(5, status_y);
+    tft.setCursor(0, y);
     tft.print("[Claude thinking...]");
   }
 
-  last_rendered_count = term_count;
+  terminal_dirty = false;
 
   // Reload 16pt font
   tft.unloadFont();
@@ -677,7 +661,7 @@ void buddy_app_loop() {
       if (press_duration >= 500) {
         // Long press: toggle terminal mode
         terminal_mode = !terminal_mode;
-        last_rendered_count = 0;  // Reset to trigger full redraw when entering/leaving terminal
+        terminal_dirty = true;  // Force redraw on toggle
         Serial.printf("[buddy] button B: toggle terminal mode = %d\n", terminal_mode);
         update_display();
       } else {

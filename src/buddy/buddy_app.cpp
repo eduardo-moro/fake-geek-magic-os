@@ -21,26 +21,19 @@ enum BuddyState {
   BUDDY_ATTENTION
 };
 
-enum TerminalLineType {
-  LINE_USER,
-  LINE_CLAUDE,
-  LINE_PERMISSION,
-  LINE_SYSTEM
-};
-
 struct TerminalLine {
   char text[120];
-  TerminalLineType type;
+  uint16_t color;
 };
 
 static const int TERM_MAX_LINES = 16;  // 240px screen: (240 - 12 padding) / 14px per line = ~16 lines
-static const int TERM_MAX_COLS = 36;
 static TerminalLine term_lines[TERM_MAX_LINES];
 static int term_count = 0;
 static int term_head = 0;  // Circular buffer head
 static bool terminal_mode = false;
 static unsigned long button_b_press_time = 0;
 static bool terminal_dirty = true;  // Redraw when true
+static uint16_t term_next_color = TFT_WHITE;  // Color for next println
 
 struct BuddyContext {
   BuddyState state;
@@ -81,7 +74,9 @@ static unsigned long deny_button_pressed_time = 0;
 static bool deny_button_already_handled = false;
 static char last_prompt_id[64] = "";  // Track to avoid duplicate terminal lines
 
-static void term_push(const char* text, TerminalLineType type) {
+static void draw_terminal();  // Forward declaration
+
+static void term_push(const char* text) {
   int slot;
   if (term_count < TERM_MAX_LINES) {
     slot = (term_head + term_count) % TERM_MAX_LINES;
@@ -93,9 +88,17 @@ static void term_push(const char* text, TerminalLineType type) {
 
   strncpy(term_lines[slot].text, text, sizeof(term_lines[slot].text) - 1);
   term_lines[slot].text[sizeof(term_lines[slot].text) - 1] = '\0';
-  term_lines[slot].type = type;
+  term_lines[slot].color = term_next_color;
+  term_next_color = TFT_WHITE;  // Reset color after each line
 
   terminal_dirty = true;
+  if (terminal_mode) {
+    draw_terminal();
+  }
+}
+
+static void term_setColor(uint16_t color) {
+  term_next_color = color;
 }
 
 static inline int term_bufIndex(int row) {
@@ -136,8 +139,10 @@ static void process_heartbeat(const JsonObject& obj) {
       perm_line += buddy.prompt_tool;
       perm_line += " - ";
       perm_line += buddy.prompt_hint;
-      term_push(perm_line.c_str(), LINE_PERMISSION);
-      term_push("[S]=approve, [N]=deny", LINE_SYSTEM);
+      term_setColor(TFT_YELLOW);
+      term_push(perm_line.c_str());
+      term_setColor(0x8410);  // Dark gray
+      term_push("[S]=approve, [N]=deny");
       strncpy(last_prompt_id, buddy.prompt_id, sizeof(last_prompt_id) - 1);
       last_prompt_id[sizeof(last_prompt_id) - 1] = '\0';
     }
@@ -226,7 +231,8 @@ static void process_evt(const JsonObject& obj) {
     if (content) {
       String display_text = "> ";
       display_text += content;
-      term_push(display_text.c_str(), LINE_USER);
+      term_setColor(TFT_CYAN);
+      term_push(display_text.c_str());
       Serial.printf("[buddy] terminal: user: %s\n", content);
     }
   } else if (strcmp(role, "assistant") == 0) {
@@ -246,7 +252,8 @@ static void process_evt(const JsonObject& obj) {
               int end = pos + max_len;
               if (end >= (int)full_text.length()) {
                 String line = full_text.substring(pos);
-                term_push(line.c_str(), LINE_CLAUDE);
+                term_setColor(TFT_WHITE);
+                term_push(line.c_str());
                 break;
               } else {
                 // Find last space before end
@@ -257,7 +264,8 @@ static void process_evt(const JsonObject& obj) {
                 if (space_pos == pos) space_pos = end;
 
                 String line = full_text.substring(pos, space_pos);
-                term_push(line.c_str(), LINE_CLAUDE);
+                term_setColor(TFT_WHITE);
+                term_push(line.c_str());
                 pos = space_pos + 1;
               }
             }
@@ -388,8 +396,6 @@ static void draw_busy() {
 static void draw_terminal() {
   if (!terminal_dirty) return;
 
-  tft.fillScreen(TFT_BLACK);
-
   // Load 10pt font for terminal
   tft.unloadFont();
   tft.loadFont("UTF8-Latin1-10", LittleFS);
@@ -398,38 +404,31 @@ static void draw_terminal() {
   tft.setTextSize(1);
 
   const int line_height = 14;
-  const int padding_top = 0;
-  const int padding_bottom = 6;
-  int y = padding_top;
+  const int padding_top = 6;
+  const int max_visible_lines = (240 - padding_top - 6) / line_height;  // 6px bottom padding
 
   // Draw all lines in circular buffer
   for (int row = 0; row < term_count; row++) {
     int idx = term_bufIndex(row);
     const TerminalLine& tline = term_lines[idx];
+    int y = padding_top + row * line_height;
 
-    // Set color based on line type
-    switch (tline.type) {
-      case LINE_USER:
-        tft.setTextColor(TFT_CYAN, TFT_BLACK);
-        break;
-      case LINE_CLAUDE:
-        tft.setTextColor(TFT_WHITE, TFT_BLACK);
-        break;
-      case LINE_PERMISSION:
-        tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-        break;
-      case LINE_SYSTEM:
-        tft.setTextColor(0x8410, TFT_BLACK);  // Dark gray
-        break;
-    }
-
+    tft.setTextColor(tline.color, TFT_BLACK);
     tft.setCursor(0, y);
     tft.print(tline.text);
-    y += line_height;
   }
 
-  // Draw status line if Claude is processing (only if it fits)
-  if (buddy.running_sessions > 0 && y < (240 - padding_bottom - line_height)) {
+  // Erase rows below content (clear old text)
+  for (int row = term_count; row < max_visible_lines; row++) {
+    int y = padding_top + row * line_height;
+    tft.setTextColor(TFT_BLACK, TFT_BLACK);
+    tft.setCursor(0, y);
+    tft.print("                                    ");  // 36 spaces
+  }
+
+  // Draw status line if Claude is processing
+  if (buddy.running_sessions > 0 && term_count < max_visible_lines) {
+    int y = padding_top + term_count * line_height;
     tft.setTextColor(TFT_GREEN, TFT_BLACK);
     tft.setCursor(0, y);
     tft.print("[Claude thinking...]");

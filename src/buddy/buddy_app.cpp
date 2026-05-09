@@ -186,10 +186,28 @@ static void read_ble_lines() {
     if (b == '\n') {
       if (line_buffer.length() > 0) {
         Serial.printf("[buddy] rx: %s\n", line_buffer.c_str());
+
+        // Debug: if line contains "entries", show raw bytes to check encoding
+        if (line_buffer.indexOf("entries") >= 0) {
+          Serial.print("[buddy] raw bytes (entries): ");
+          for (int i = 0; i < line_buffer.length() && i < 200; i++) {
+            uint8_t c = (uint8_t)line_buffer[i];
+            if (c < 32 || c >= 127) {
+              Serial.printf("[%02x]", c);
+            } else {
+              Serial.write(c);
+            }
+          }
+          Serial.println();
+        }
+
         process_json_line(line_buffer);
       }
       line_buffer = "";
     } else if (b >= 32 && b < 127) {
+      line_buffer += (char)b;
+    } else {
+      // Non-ASCII byte (possibly UTF-8) — add it anyway
       line_buffer += (char)b;
     }
   }
